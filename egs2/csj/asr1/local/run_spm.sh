@@ -1,1 +1,0 @@
-../../../../egs/csj/asr1/local/run_spm.sh

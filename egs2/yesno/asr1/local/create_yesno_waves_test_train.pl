@@ -1,1 +1,0 @@
-../../../../egs/yesno/asr1/local/create_yesno_waves_test_train.pl

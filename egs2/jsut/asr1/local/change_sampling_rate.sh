@@ -1,1 +1,0 @@
-../../../../egs/jsut/asr1/local/change_sampling_rate.sh

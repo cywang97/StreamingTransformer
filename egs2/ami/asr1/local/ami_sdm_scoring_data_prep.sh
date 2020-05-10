@@ -1,1 +1,0 @@
-../../../../egs/ami/asr1/local/ami_sdm_scoring_data_prep.sh

@@ -1,1 +1,0 @@
-../../../../egs/yesno/asr1/local/create_yesno_wav_scp.pl
