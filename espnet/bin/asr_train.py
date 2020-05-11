@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
-# Copyright 2017 Tomoki Hayashi (Nagoya University)
-#  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
-
 """Automatic speech recognition model training script."""
 
 import logging
@@ -11,6 +8,11 @@ import os
 import random
 import subprocess
 import sys
+import pdb
+if "/home/espnet" in sys.path:
+    sys.path.remove("/home/espnet")
+ESPNET_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
+sys.path.insert(0, ESPNET_ROOT)
 
 from distutils.version import LooseVersion
 
@@ -36,18 +38,6 @@ def get_parser(parser=None, required=True):
         )
     # general configuration
     parser.add("--config", is_config_file=True, help="config file path")
-    parser.add(
-        "--config2",
-        is_config_file=True,
-        help="second config file path that overwrites the settings in `--config`.",
-    )
-    parser.add(
-        "--config3",
-        is_config_file=True,
-        help="third config file path that overwrites the settings in "
-        "`--config` and `--config2`.",
-    )
-
     parser.add_argument(
         "--ngpu",
         default=None,
@@ -61,13 +51,6 @@ def get_parser(parser=None, required=True):
         help="Data type for training (only pytorch backend). "
         "O0,O1,.. flags require apex. "
         "See https://nvidia.github.io/apex/amp.html#opt-levels",
-    )
-    parser.add_argument(
-        "--backend",
-        default="chainer",
-        type=str,
-        choices=["chainer", "pytorch"],
-        help="Backend library",
     )
     parser.add_argument(
         "--outdir", type=str, required=required, help="Output directory"
@@ -129,10 +112,6 @@ def get_parser(parser=None, required=True):
         type=str,
         default=None,
         help="model defined module (default: espnet.nets.xxx_backend.e2e_asr:E2E)",
-    )
-    # encoder
-    parser.add_argument(
-        "--num-encs", default=1, type=int, help="Number of encoders in the model."
     )
     # loss related
     parser.add_argument(
@@ -392,97 +371,6 @@ def get_parser(parser=None, required=True):
         help="Apply Weighted Prediction Error",
     )
     parser.add_argument(
-        "--wtype",
-        default="blstmp",
-        type=str,
-        choices=[
-            "lstm",
-            "blstm",
-            "lstmp",
-            "blstmp",
-            "vgglstmp",
-            "vggblstmp",
-            "vgglstm",
-            "vggblstm",
-            "gru",
-            "bgru",
-            "grup",
-            "bgrup",
-            "vgggrup",
-            "vggbgrup",
-            "vgggru",
-            "vggbgru",
-        ],
-        help="Type of encoder network architecture "
-        "of the mask estimator for WPE. "
-        "",
-    )
-    parser.add_argument("--wlayers", type=int, default=2, help="")
-    parser.add_argument("--wunits", type=int, default=300, help="")
-    parser.add_argument("--wprojs", type=int, default=300, help="")
-    parser.add_argument("--wdropout-rate", type=float, default=0.0, help="")
-    parser.add_argument("--wpe-taps", type=int, default=5, help="")
-    parser.add_argument("--wpe-delay", type=int, default=3, help="")
-    parser.add_argument(
-        "--use-dnn-mask-for-wpe",
-        type=strtobool,
-        default=False,
-        help="Use DNN to estimate the power spectrogram. "
-        "This option is experimental.",
-    )
-    # Beamformer related
-    parser.add_argument("--use-beamformer", type=strtobool, default=True, help="")
-    parser.add_argument(
-        "--btype",
-        default="blstmp",
-        type=str,
-        choices=[
-            "lstm",
-            "blstm",
-            "lstmp",
-            "blstmp",
-            "vgglstmp",
-            "vggblstmp",
-            "vgglstm",
-            "vggblstm",
-            "gru",
-            "bgru",
-            "grup",
-            "bgrup",
-            "vgggrup",
-            "vggbgrup",
-            "vgggru",
-            "vggbgru",
-        ],
-        help="Type of encoder network architecture "
-        "of the mask estimator for Beamformer.",
-    )
-    parser.add_argument("--blayers", type=int, default=2, help="")
-    parser.add_argument("--bunits", type=int, default=300, help="")
-    parser.add_argument("--bprojs", type=int, default=300, help="")
-    parser.add_argument("--badim", type=int, default=320, help="")
-    parser.add_argument(
-        "--bnmask",
-        type=int,
-        default=2,
-        help="Number of beamforming masks, " "default is 2 for [speech, noise].",
-    )
-    parser.add_argument(
-        "--ref-channel",
-        type=int,
-        default=-1,
-        help="The reference channel used for beamformer. "
-        "By default, the channel is estimated by DNN.",
-    )
-    parser.add_argument("--bdropout-rate", type=float, default=0.0, help="")
-    # Feature transform: Normalization
-    parser.add_argument(
-        "--stats-file",
-        type=str,
-        default=None,
-        help="The stats file for the feature normalization",
-    )
-    parser.add_argument(
         "--apply-uttmvn",
         type=strtobool,
         default=True,
@@ -502,6 +390,8 @@ def get_parser(parser=None, required=True):
     )
     parser.add_argument("--fbank-fmin", type=float, default=0.0, help="")
     parser.add_argument("--fbank-fmax", type=float, default=None, help="")
+
+    parser.add_argument('--streaming', type=strtobool, default=True, help="")
     return parser
 
 
@@ -509,11 +399,6 @@ def main(cmd_args):
     """Run the main training function."""
     parser = get_parser()
     args, _ = parser.parse_known_args(cmd_args)
-    if args.backend == "chainer" and args.train_dtype != "float32":
-        raise NotImplementedError(
-            f"chainer backend does not support --train-dtype {args.train_dtype}."
-            "Use --dtype float32."
-        )
     if args.ngpu == 0 and args.train_dtype in ("O0", "O1", "O2", "O3", "float16"):
         raise ValueError(
             f"--train-dtype {args.train_dtype} does not support the CPU backend."
@@ -521,19 +406,12 @@ def main(cmd_args):
 
     from espnet.utils.dynamic_import import dynamic_import
 
-    if args.model_module is None:
-        model_module = "espnet.nets." + args.backend + "_backend.e2e_asr:E2E"
-    else:
-        model_module = args.model_module
+    model_module = args.model_module
     model_class = dynamic_import(model_module)
     model_class.add_arguments(parser)
 
     args = parser.parse_args(cmd_args)
     args.model_module = model_module
-    if "chainer_backend" in args.model_module:
-        args.backend = "chainer"
-    if "pytorch_backend" in args.model_module:
-        args.backend = "pytorch"
 
     # logging info
     if args.verbose > 0:
@@ -567,11 +445,6 @@ def main(cmd_args):
             else:
                 ngpu = len(p.stderr.decode().split("\n")) - 1
     else:
-        if is_torch_1_2_plus and args.ngpu != 1:
-            logging.debug(
-                "There are some bugs with multi-GPU processing in PyTorch 1.2+"
-                + " (see https://github.com/pytorch/pytorch/issues/21108)"
-            )
         ngpu = args.ngpu
     logging.info(f"ngpu: {ngpu}")
 
@@ -595,28 +468,8 @@ def main(cmd_args):
         args.char_list = None
 
     # train
-    logging.info("backend = " + args.backend)
-
-    if args.num_spkrs == 1:
-        if args.backend == "chainer":
-            from espnet.asr.chainer_backend.asr import train
-
-            train(args)
-        elif args.backend == "pytorch":
-            from espnet.asr.pytorch_backend.asr import train
-
-            train(args)
-        else:
-            raise ValueError("Only chainer and pytorch are supported.")
-    else:
-        # FIXME(kamo): Support --model-module
-        if args.backend == "pytorch":
-            from espnet.asr.pytorch_backend.asr_mix import train
-
-            train(args)
-        else:
-            raise ValueError("Only pytorch is supported.")
-
+    from espnet.asr.pytorch_backend.asr_ddp import train
+    train(args)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

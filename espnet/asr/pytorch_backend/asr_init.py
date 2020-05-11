@@ -9,10 +9,6 @@ from collections import OrderedDict
 from espnet.asr.asr_utils import get_model_conf
 from espnet.asr.asr_utils import torch_load
 
-from espnet.nets.asr_interface import ASRInterface
-from espnet.nets.mt_interface import MTInterface
-from espnet.nets.tts_interface import TTSInterface
-
 from espnet.utils.dynamic_import import dynamic_import
 
 
@@ -187,23 +183,17 @@ def get_trained_model_state_dict(model_path):
     model_class = dynamic_import(model_module)
     model = model_class(idim, odim, args)
     torch_load(model_path, model)
-    assert (
-        isinstance(model, MTInterface)
-        or isinstance(model, ASRInterface)
-        or isinstance(model, TTSInterface)
-    )
 
     return model.state_dict(), False
 
 
-def load_trained_modules(idim, odim, args, interface=ASRInterface):
+def load_trained_modules(idim, odim, args):
     """Load model encoder or/and decoder modules with ESPNET pre-trained model(s).
 
     Args:
         idim (int): initial input dimension.
         odim (int): initial output dimension.
         args (Namespace): The initial model arguments.
-        interface (Interface): ASRInterface or STInterface or TTSInterface.
 
     Return:
         model (torch.nn.Module): The model with pretrained modules.
@@ -223,7 +213,6 @@ def load_trained_modules(idim, odim, args, interface=ASRInterface):
 
     model_class = dynamic_import(args.model_module)
     main_model = model_class(idim, odim, args)
-    assert isinstance(main_model, interface)
 
     main_state_dict = main_model.state_dict()
 

@@ -29,17 +29,6 @@ def get_parser():
     )
     # general configuration
     parser.add("--config", is_config_file=True, help="Config file path")
-    parser.add(
-        "--config2",
-        is_config_file=True,
-        help="Second config file path that overwrites the settings in `--config`",
-    )
-    parser.add(
-        "--config3",
-        is_config_file=True,
-        help="Third config file path that overwrites the settings "
-        "in `--config` and `--config2`",
-    )
 
     parser.add_argument("--ngpu", type=int, default=0, help="Number of GPUs")
     parser.add_argument(
@@ -48,36 +37,14 @@ def get_parser():
         default="float32",
         help="Float precision (only available in --api v2)",
     )
-    parser.add_argument(
-        "--backend",
-        type=str,
-        default="chainer",
-        choices=["chainer", "pytorch"],
-        help="Backend library",
-    )
     parser.add_argument("--debugmode", type=int, default=1, help="Debugmode")
     parser.add_argument("--seed", type=int, default=1, help="Random seed")
     parser.add_argument("--verbose", "-V", type=int, default=1, help="Verbose option")
-    parser.add_argument(
-        "--batchsize",
-        type=int,
-        default=1,
-        help="Batch size for beam search (0: means no batch processing)",
-    )
     parser.add_argument(
         "--preprocess-conf",
         type=str,
         default=None,
         help="The configuration file for the pre-processing",
-    )
-    parser.add_argument(
-        "--api",
-        default="v1",
-        choices=["v1", "v2"],
-        help="Beam search APIs "
-        "v1: Default API. It only supports the ASRInterface.recognize method "
-        "and DefaultRNNLM. "
-        "v2: Experimental API. It supports any models that implements ScorerInterface.",
     )
     # task related
     parser.add_argument(
@@ -95,16 +62,6 @@ def get_parser():
     )
     parser.add_argument(
         "--model-conf", type=str, default=None, help="Model config file"
-    )
-    parser.add_argument(
-        "--num-spkrs",
-        type=int,
-        default=1,
-        choices=[1, 2],
-        help="Number of speakers in the speech",
-    )
-    parser.add_argument(
-        "--num-encs", default=1, type=int, help="Number of encoders in the model."
     )
     # search related
     parser.add_argument("--nbest", type=int, default=1, help="Output N-best hypotheses")
@@ -127,30 +84,6 @@ def get_parser():
     parser.add_argument(
         "--ctc-weight", type=float, default=0.0, help="CTC weight in joint decoding"
     )
-    parser.add_argument(
-        "--weights-ctc-dec",
-        type=float,
-        action="append",
-        help="ctc weight assigned to each encoder during decoding."
-        "[in multi-encoder mode only]",
-    )
-    parser.add_argument(
-        "--ctc-window-margin",
-        type=int,
-        default=0,
-        help="""Use CTC window with margin parameter to accelerate
-                        CTC/attention decoding especially on GPU. Smaller magin
-                        makes decoding faster, but may increase search errors.
-                        If margin=0 (default), this function is disabled""",
-    )
-    # transducer related
-    parser.add_argument(
-        "--score-norm-transducer",
-        type=strtobool,
-        nargs="?",
-        default=True,
-        help="Normalize transducer scores by length",
-    )
     # rnnlm related
     parser.add_argument(
         "--rnnlm", type=str, default=None, help="RNNLM model file to read"
@@ -170,27 +103,7 @@ def get_parser():
     parser.add_argument("--word-dict", type=str, default=None, help="Word list to read")
     parser.add_argument("--lm-weight", type=float, default=0.1, help="RNNLM weight")
     # streaming related
-    parser.add_argument(
-        "--streaming-mode",
-        type=str,
-        default=None,
-        choices=["window", "segment"],
-        help="""Use streaming recognizer for inference.
-                        `--batchsize` must be set to 0 to enable this mode""",
-    )
-    parser.add_argument("--streaming-window", type=int, default=10, help="Window size")
-    parser.add_argument(
-        "--streaming-min-blank-dur",
-        type=int,
-        default=10,
-        help="Minimum blank duration threshold",
-    )
-    parser.add_argument(
-        "--streaming-onset-margin", type=int, default=1, help="Onset margin"
-    )
-    parser.add_argument(
-        "--streaming-offset-margin", type=int, default=1, help="Offset margin"
-    )
+    parser.add_argument("--viterbi", type=strtobool, default=False)
     return parser
 
 
@@ -252,44 +165,13 @@ def main(args):
 
     # recog
     logging.info("backend = " + args.backend)
-    if args.num_spkrs == 1:
-        if args.backend == "chainer":
-            from espnet.asr.chainer_backend.asr import recog
 
-            recog(args)
-        elif args.backend == "pytorch":
-            if args.num_encs == 1:
-                # Experimental API that supports custom LMs
-                if args.api == "v2":
-                    from espnet.asr.pytorch_backend.recog import recog_v2
-
-                    recog_v2(args)
-                else:
-                    from espnet.asr.pytorch_backend.asr import recog
-
-                    if args.dtype != "float32":
-                        raise NotImplementedError(
-                            f"`--dtype {args.dtype}` is only available with `--api v2`"
-                        )
-                    recog(args)
-            else:
-                if args.api == "v2":
-                    raise NotImplementedError(
-                        f"--num-encs {args.num_encs} > 1 is not supported in --api v2"
-                    )
-                else:
-                    from espnet.asr.pytorch_backend.asr import recog
-
-                    recog(args)
-        else:
-            raise ValueError("Only chainer and pytorch are supported.")
-    elif args.num_spkrs == 2:
-        if args.backend == "pytorch":
-            from espnet.asr.pytorch_backend.asr_mix import recog
-
-            recog(args)
-        else:
-            raise ValueError("Only pytorch is supported.")
+    if not args.viterbi:
+        from espnet.asr.pytorch_backend.asr import recog
+        recog(args)
+    else:
+        from espnet.asr.pytorch_backend.asr import viterbi_decode
+        viterbi_decode(args)
 
 
 if __name__ == "__main__":

@@ -258,6 +258,80 @@ def make_non_pad_mask(lengths, xs=None, length_dim=-1):
     """
     return ~make_pad_mask(lengths, xs, length_dim)
 
+def turncated_mask(bs, length, left=3000, right=0, length_dim=-1):
+    if length_dim == 0:
+        raise ValueError('length_dim cannot be 0: {}'.format(length_dim))
+
+    seq_range = torch.arange(0, length, dtype=torch.int64)
+    seq_range_expand = seq_range.unsqueeze(0).unsqueeze(0).expand(bs, length, length)
+
+    seq_right = seq_range.unsqueeze(0).expand(bs, -1).unsqueeze(-1) + right
+    right_mask = seq_range_expand <= seq_right
+
+    seq_left = seq_range.unsqueeze(0).expand(bs, -1).unsqueeze(-1) - left
+    left_mask = seq_range_expand >= seq_left
+    mask = right_mask & left_mask
+
+    return mask
+
+def chunk_turncated_mask(bs, length, right_window):
+    seq_range = torch.arange(0, length, dtype=torch.int64)
+    chunk_size = (length + length % right_window) // right_window
+    chunk_range = (seq_range // right_window + 1) * right_window
+    seq_range_expand = seq_range.unsqueeze(0).unsqueeze(0).expand(bs, length, length)
+    chunk_range_expand = chunk_range.unsqueeze(0).unsqueeze(-1).expand(bs, length, 1)
+    mask = seq_range_expand < chunk_range_expand
+    return mask
+
+def trigger_mask(bs, length, align, left_window=0, right_window=6, length_dim=-1):
+    ylen = align.size(1)
+    seq_range = torch.arange(0, length, dtype=torch.int64).to(align.device)
+    seq_range_expand = seq_range.unsqueeze(0).unsqueeze(0).expand(bs, ylen, length)
+    align_expand = align.unsqueeze(-1).expand(-1, -1, length)
+    mask = (seq_range_expand >= align_expand-left_window) & (seq_range_expand <= align_expand+right_window)
+    return mask
+
+def adaptive_trigger_mask(align, start, x_len, right_window=0, left_window=0):
+    start = torch.Tensor(start).long()
+    start_pad = torch.nn.functional.pad(start, (1, 0))
+    end_pad = torch.nn.functional.pad(start, (0, 1), value=1000)
+    align = align.unsqueeze(-1) + right_window
+    idx = ((align < end_pad) & (align >= start_pad)).nonzero()[:, 1]
+    boundary = end_pad[idx]
+    seq_range_expand = torch.arange(0, x_len).unsqueeze(0).expand(len(boundary), -1)
+    mask = (seq_range_expand < boundary.unsqueeze(-1))
+    if left_window == 0:
+        return mask
+    else:
+        idx_left = idx - left_window
+        idx_left[idx_left < 0] = 0
+        boundary_left = start_pad[idx_left]
+        mask_left = seq_range_expand >= boundary_left.unsqueeze(-1)
+        return mask & mask_left
+
+
+def adaptive_enc_mask(x_len, start, left_window=0, right_window=0):
+    start = torch.Tensor(start).long()
+    start_pad = torch.nn.functional.pad(start, (1, 0))
+    end_pad = torch.nn.functional.pad(start, (0, 1), value=x_len)
+    seq_range = torch.arange(0, x_len).unsqueeze(-1)
+    idx = ((seq_range < end_pad) & (seq_range >= start_pad)).nonzero()[:, 1]
+    boundary = end_pad[idx]
+    seq_range_expand = torch.arange(0, x_len).unsqueeze(0).expand(x_len, -1)
+    mask = seq_range_expand < boundary.unsqueeze(-1)
+    if left_window == 0 and right_window == 0:
+        return mask
+    else:
+        idx_left = idx - left_window
+        idx_left[idx_left < 0] = 0
+        boundary_left = start_pad[idx_left]
+        mask_left = seq_range_expand >= boundary_left.unsqueeze(-1)
+        idx_right = idx + right_window
+        idx_right[idx_right > len(start)] = len(start)
+        boundary_right = end_pad[idx_right]
+        mask_right = seq_range_expand < boundary_right.unsqueeze(-1)
+        return mask_left & mask_right
+
 
 def mask_by_length(xs, lengths, fill=0):
     """Mask tensor according to length.
@@ -288,7 +362,6 @@ def mask_by_length(xs, lengths, fill=0):
     for i, l in enumerate(lengths):
         ret[i, :l] = xs[i, :l]
     return ret
-
 
 def th_accuracy(pad_outputs, pad_targets, ignore_label):
     """Calculate accuracy.

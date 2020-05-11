@@ -153,6 +153,10 @@ class LoadInputsAndTargets(object):
                         )
 
                     y_feats_dict.setdefault(inp["name"], []).append(x)
+                    if 'align' in inp:
+                        x = np.fromiter(map(int, inp['align'].split()),
+                                        dtype=np.int64)
+                        y_feats_dict.setdefault('align', []).append(x)
 
         if self.mode == "asr":
             return_batch, uttid_list = self._create_batch_asr(
