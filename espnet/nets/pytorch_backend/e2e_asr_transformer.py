@@ -4,7 +4,6 @@
 """Transformer speech recognition model (pytorch)."""
 
 from argparse import Namespace
-from collections import defaultdict, Counter
 from distutils.util import strtobool
 import pdb
 import time
@@ -19,16 +18,13 @@ from espnet.nets.viterbi_align import viterbi_align
 from espnet.nets.pytorch_backend.ctc import CTC
 from espnet.nets.pytorch_backend.nets_utils import make_non_pad_mask, th_accuracy, pad_list
 from espnet.nets.pytorch_backend.transformer.add_sos_eos import add_sos_eos
-from espnet.nets.pytorch_backend.transformer.attention import MultiHeadedAttention
 from espnet.nets.pytorch_backend.transformer.decoder import Decoder
 from espnet.nets.pytorch_backend.transformer.encoder import Encoder
 from espnet.nets.pytorch_backend.transformer.initializer import initialize
 from espnet.nets.pytorch_backend.transformer.label_smoothing_loss import LabelSmoothingLoss
 from espnet.nets.pytorch_backend.transformer.mask import subsequent_mask
 from espnet.nets.pytorch_backend.transformer.mask import target_mask
-from espnet.nets.pytorch_backend.transformer.plot import PlotAttentionReport
 from espnet.nets.pytorch_backend.transformer.subsampling import Conv2dSubsampling, EncoderConv2d
-from espnet.nets.scorers.ctc import CTCPrefixScorer
 
 CTC_LOSS_THRESHOLD = 10000
 
@@ -83,10 +79,6 @@ class E2E(torch.nn.Module):
 
         return parser
 
-    @property
-    def attention_plot_class(self):
-        """Return PlotAttentionReport."""
-        return PlotAttentionReport
 
     def __init__(self, idim, odim, args, ignore_id=-1):
         """Construct an E2E object.
@@ -138,13 +130,6 @@ class E2E(torch.nn.Module):
         else:
             self.ctc = None
 
-        if args.report_cer or args.report_wer:
-            from espnet.nets.e2e_asr_common import ErrorCalculator
-            self.error_calculator = ErrorCalculator(args.char_list,
-                                                    args.sym_space, args.sym_blank,
-                                                    args.report_cer, args.report_wer)
-        else:
-            self.error_calculator = None
         self.rnnlm = None
 
     def reset_parameters(self, args):
@@ -183,9 +168,6 @@ class E2E(torch.nn.Module):
             batch_size = xs_pad.size(0)
             hs_len = hs_mask.view(batch_size, -1).sum(1)
             loss_ctc = self.ctc(hs_pad.view(batch_size, -1, self.adim), hs_len, ys_pad)
-            if self.error_calculator is not None:
-                ys_hat = self.ctc.argmax(hs_pad.view(batch_size, -1, self.adim)).data
-                cer_ctc = self.error_calculator(ys_hat.cpu(), ys_pad.cpu(), is_ctc=True)
 
         # trigger mask
         start_time = time.time()
@@ -200,15 +182,6 @@ class E2E(torch.nn.Module):
         self.acc = th_accuracy(pred_pad.view(-1, self.odim), ys_out_pad,
                                ignore_label=self.ignore_id)
 
-        # TODO(karita) show predicted text
-        # TODO(karita) calculate these stats
-
-        # 5. compute cer/wer
-        if self.training or self.error_calculator is None:
-            cer, wer = None, None
-        else:
-            ys_hat = pred_pad.argmax(dim=-1)
-            cer, wer = self.error_calculator(ys_hat.cpu(), ys_pad.cpu())
 
         # copyied from e2e_asr
         alpha = self.mtlalpha
@@ -223,18 +196,9 @@ class E2E(torch.nn.Module):
         else:
             self.loss = alpha * loss_ctc + (1 - alpha) * loss_att
             loss_att_data = float(loss_att)
-            loss_ctc_data = float(loss_ctc)
 
-        loss_data = float(self.loss)
-        if loss_data < CTC_LOSS_THRESHOLD and not math.isnan(loss_data):
-            self.reporter.report(loss_ctc_data, loss_att_data, self.acc, cer_ctc, cer, wer, loss_data)
-        else:
-            logging.warning('loss (=%f) is not correct', loss_data)
-        return self.loss
+        return self.loss, loss_ctc_data, loss_att_data, self.acc
 
-    def scorers(self):
-        """Scorers."""
-        return dict(decoder=self.decoder, ctc=CTCPrefixScorer(self.ctc, self.eos))
 
     def encode(self, x, mask=None):
         """Encode acoustic features.
@@ -453,23 +417,4 @@ class E2E(torch.nn.Module):
         logging.info('normalized log probability: ' + str(nbest_hyps[0]['score'] / len(nbest_hyps[0]['yseq'])))
         return nbest_hyps
 
-
-    def calculate_all_attentions(self, xs_pad, ilens, ys_pad):
-        """E2E attention calculation.
-
-        :param torch.Tensor xs_pad: batch of padded input sequences (B, Tmax, idim)
-        :param torch.Tensor ilens: batch of lengths of input sequences (B)
-        :param torch.Tensor ys_pad: batch of padded token id sequence tensor (B, Lmax)
-        :return: attention weights with the following shape,
-            1) multi-head case => attention weights (B, H, Lmax, Tmax),
-            2) other case => attention weights (B, Lmax, Tmax).
-        :rtype: float ndarray
-        """
-        with torch.no_grad():
-            self.forward(xs_pad, ilens, ys_pad)
-        ret = dict()
-        for name, m in self.named_modules():
-            if isinstance(m, MultiHeadedAttention):
-                ret[name] = m.attn.cpu().numpy()
-        return ret
 

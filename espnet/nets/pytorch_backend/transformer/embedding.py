@@ -11,26 +11,6 @@ import math
 import torch
 
 
-def _pre_hook(
-    state_dict,
-    prefix,
-    local_metadata,
-    strict,
-    missing_keys,
-    unexpected_keys,
-    error_msgs,
-):
-    """Perform pre-hook in load_state_dict for backward compatibility.
-
-    Note:
-        We saved self.pe until v.0.5.2 but we have omitted it later.
-        Therefore, we remove the item "pe" from `state_dict` for backward compatibility.
-
-    """
-    k = prefix + "pe"
-    if k in state_dict:
-        state_dict.pop(k)
-
 
 class PositionalEncoding(torch.nn.Module):
     """Positional encoding.
@@ -49,7 +29,6 @@ class PositionalEncoding(torch.nn.Module):
         self.dropout = torch.nn.Dropout(p=dropout_rate)
         self.pe = None
         self.extend_pe(torch.tensor(0.0).expand(1, max_len))
-        self._register_load_state_dict_pre_hook(_pre_hook)
 
     def extend_pe(self, x):
         """Reset the positional encodings."""
@@ -81,41 +60,4 @@ class PositionalEncoding(torch.nn.Module):
         """
         self.extend_pe(x)
         x = x * self.xscale + self.pe[:, : x.size(1)]
-        return self.dropout(x)
-
-
-class ScaledPositionalEncoding(PositionalEncoding):
-    """Scaled positional encoding module.
-
-    See also: Sec. 3.2  https://arxiv.org/pdf/1809.08895.pdf
-
-    """
-
-    def __init__(self, d_model, dropout_rate, max_len=5000):
-        """Initialize class.
-
-        :param int d_model: embedding dim
-        :param float dropout_rate: dropout rate
-        :param int max_len: maximum input length
-
-        """
-        super().__init__(d_model=d_model, dropout_rate=dropout_rate, max_len=max_len)
-        self.alpha = torch.nn.Parameter(torch.tensor(1.0))
-
-    def reset_parameters(self):
-        """Reset parameters."""
-        self.alpha.data = torch.tensor(1.0)
-
-    def forward(self, x):
-        """Add positional encoding.
-
-        Args:
-            x (torch.Tensor): Input. Its shape is (batch, time, ...)
-
-        Returns:
-            torch.Tensor: Encoded tensor. Its shape is (batch, time, ...)
-
-        """
-        self.extend_pe(x)
-        x = x + self.alpha * self.pe[:, : x.size(1)]
         return self.dropout(x)

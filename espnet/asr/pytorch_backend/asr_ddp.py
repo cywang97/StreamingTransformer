@@ -6,31 +6,21 @@
 
 """Training/decoding definition for the speech recognition task."""
 
-import copy
 import json
-import logging
 import math
 import os
-import sys
-import random
 import time
-import pdb
+import logging
 
 import numpy as np
 import torch
-import torch.backends.cudnn as cudnn
 import torch.distributed as dist
 import torch.multiprocessing as mp
 import torch.utils.data.distributed
 import random
 
-from espnet.asr.asr_utils import adadelta_eps_decay
-from espnet.asr.asr_utils import get_model_conf
-from espnet.asr.pytorch_backend.asr_init import load_trained_model
 from espnet.asr.pytorch_backend.asr_init import load_trained_modules
 from chainer.datasets import TransformDataset
-from espnet.utils.dataset import ChainerDataLoader
-from espnet.utils.deterministic_utils import set_deterministic_pytorch
 from espnet.utils.dynamic_import import dynamic_import
 from espnet.utils.io_utils import LoadInputsAndTargets
 from espnet.utils.training.batchfy import make_batchset
@@ -38,12 +28,6 @@ from espnet.nets.pytorch_backend.nets_utils import *
 
 import matplotlib
 matplotlib.use('Agg')
-
-if sys.version_info[0] == 2:
-    from itertools import izip_longest as zip_longest
-else:
-    from itertools import zip_longest as zip_longest
-
 
 
 class AverageMeter(object):
@@ -86,124 +70,7 @@ class ProgressMeter(object):
         return '[' + fmt + '/' + fmt.format(num_batches)+']'
 
 
-class MaskConverter(object):
-    """Custom batch converter for Pytorch.
-
-    Args:
-        subsampling_factor (int): The subsampling factor.
-        dtype (torch.dtype): Data type to convert.
-
-    """
-
-    def __init__(self,device, subsampling_factor=1, dtype=torch.float32, mask_ratio=0.15,reverse=False):
-        """Construct a MaskConverter object."""
-        self.subsampling_factor = subsampling_factor
-        self.ignore_id = -1
-        self.dtype = dtype
-        self.device = device
-        self.mask_ratio = mask_ratio
-        self.reverse=reverse
-
-    def del_feats(self, feat, params):
-        start, end, label = params
-        seq_len = label.shape[0]
-        delpos = np.random.binomial(1, self.mask_ratio, size=seq_len)
-        mask_id = np.argwhere(delpos == 1)
-        delpos2 = []
-        for i in range(len(mask_id)):
-            id = mask_id[i]
-            for j in range(start[id][0],end[id][0]):
-                delpos2.append(j)
-
-        feat = np.delete(feat,delpos2,axis=0)
-        return feat
-
-    ## mask phrases, it seems comparable with word masking.
-    def phrase_mask_feats(self, feat, params):
-        start, end, label = params
-        start = np.unique(start)
-        end = np.unique(end)
-        seq_len = len(start)
-        mask = np.random.binomial(1, self.mask_ratio, size=seq_len)
-        mask_id = np.argwhere(mask == 1)
-        fill_num = feat.mean()
-        # fill_num = np.random.normal(feat.mean(), feat.std(), size=feat.shape)
-        for i in range(len(mask_id)):
-            id = mask_id[i]
-            # span masking
-            if end[id][0] - start[id][0] < 30:
-                # logging.warning("phrase masking!!!")
-                if random.uniform(0, 1) > 0.5:
-                    if random.uniform(0, 1) > 0.5:
-                        if id != 0:
-                            feat[start[id - 1][0]:end[id][0]] = fill_num
-                    else:
-                        if id != seq_len - 1:
-                            feat[start[id][0]:end[id + 1][0]] = fill_num
-            # feat[start[id[0]]:end[id[0]]] = fill_num[start[id[0]]:end[id[0]]]
-            feat[start[id][0]:end[id][0]] = fill_num
-        # label_mask.append(-1)
-        return feat
-
-    ## mask words
-    def mask_feats(self, feat, start, end):
-        start = np.unique(start)
-        end = np.unique(end)
-        seq_len = len(start)
-        mask = np.random.binomial(1, self.mask_ratio, size=seq_len)
-        mask_id = np.argwhere(mask == 1)
-        fill_num = feat.mean()
-        for i in range(len(mask_id)):
-            id = mask_id[i]
-            feat[start[id][0]:end[id][0]] = fill_num
-        # label_mask.append(-1)
-        return feat
-
-    def __call__(self, batch):
-        """Transform a batch and send it to a device.
-
-        Args:
-            batch (list): The batch to transform.
-
-        Returns:
-            tuple(torch.Tensor, torch.Tensor, torch.Tensor)
-
-        """
-        # batch should be located in list
-
-        xs, ys = batch
-        ys = list(ys)
-        start = ys[0]
-        end = ys[1]
-        ys = ys[2]
-        masked_xs = []
-        # assert len(xs[0]) == len(ys[0])
-        for i in range(len(xs)):
-            x = self.mask_feats(xs[i],start[i], end[i])
-            #x = self.del_feats(x, ys[i])
-            masked_xs.append(x)
-        xs = masked_xs
-
-        # perform subsampling
-        if self.subsampling_factor > 1:
-            xs = [x[::self.subsampling_factor, :] for x in xs]
-
-        # get batch of lengths of input sequences
-        ilens = np.array([x.shape[0] for x in xs])
-        ilens = torch.from_numpy(ilens).to(self.device)
-        xs_pad = pad_list([torch.from_numpy(x).float() for x in xs], 0).to(self.device, dtype=self.dtype)
-
-        if self.reverse:
-            ys_pad = pad_list([torch.from_numpy(np.flip(y[2],0).copy()) for y in ys],
-                              self.ignore_id).long().to(self.device)
-        else:
-            ys_pad = pad_list([torch.from_numpy(y[2]) for y in ys],
-                              self.ignore_id).long().to(self.device)
-
-        return xs_pad, ilens, ys_pad
-
-
-class StreamingConverter(MaskConverter):
+class StreamingConverter(object):
     def __init__(self,device, args, subsampling_factor=1, dtype=torch.float32, mask_ratio=0.15,reverse=False):
         """Construct a MaskConverter object."""
         self.args = args
@@ -345,9 +212,6 @@ def dist_train(gpu, args):
     logging.warning("Hi Master, I am gpu {0}".format(gpu))
     if not os.path.exists(args.outdir):
         os.makedirs(args.outdir)
-    #redirObj = RedirectStdout()
-    #sys.stdout = redirObj
-    #redirObj.toFile(args.outdir + '/log')
 
     init_method = "tcp://localhost:{port}".format(port=args.port)
 
@@ -438,7 +302,6 @@ def dist_train(gpu, args):
         loc = 'cuda:{}'.format(args.gpu)
         checkpoint = torch.load(args.resume, map_location=loc)
         start_epoch = checkpoint['epoch']
-        #best_acc = checkpoint['best_acc']
         model.load_state_dict(checkpoint['state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer'])
         logging.warning("=> loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
@@ -503,24 +366,23 @@ def train_epoch(train_loader, model, optimizer, epoch, args):
 def validate(valid_loader, model, args):
     batch_time = AverageMeter('Time', ':6.1f')
     losses = AverageMeter('Loss', ':6.4f')
-    #ctc_losses = AverageMeter('CTCLoss', ':6.4f')
-    #att_losses = AverageMeter('ATTLoss', ':6.4f')
-    #acc_meter = AverageMeter('Acc', ':6.4f')
-    #lr_meter = AverageMeter("Lr", ":6.6f")
+    ctc_losses = AverageMeter('CTCLoss', ':6.4f')
+    att_losses = AverageMeter('ATTLoss', ':6.4f')
+    acc_meter = AverageMeter('Acc', ':6.4f')
     progress = ProgressMeter(
         len(valid_loader),
-        [batch_time, losses],
+        [batch_time, losses, ctc_losses, att_losses, acc_meter],
         prefix="GPU: [{}]".format(args.gpu))
     model.eval()
     with torch.no_grad():
         start = time.time()
         for i, batch in enumerate(valid_loader):
             batch = tuple(arr[0] for arr in batch)
-            loss = model(*batch)
+            loss, ctc_loss, att_loss, acc = model(*batch)
             losses.update(loss.item())
-            #ctc_losses.update(loss.item())
-            #att_losses.update(att_loss.item())
-            #acc_meter.update(acc)
+            ctc_losses.update(ctc_loss)
+            att_losses.update(att_loss)
+            acc_meter.update(acc)
             batch_time.update(time.time()-start)
     progress.display(len(valid_loader))
     return losses.avg

@@ -9,7 +9,6 @@
 import json
 import logging
 import os
-import sys
 import pdb
 
 import numpy as np
@@ -19,16 +18,10 @@ from espnet.asr.asr_utils import add_results_to_json, add_single_results
 from espnet.asr.asr_utils import get_model_conf
 from espnet.asr.asr_utils import torch_load
 from espnet.asr.pytorch_backend.asr_init import load_trained_model
-from espnet.asr.pytorch_backend.asr_init import load_trained_modules
 import espnet.nets.pytorch_backend.lm.default as lm_pytorch
 from espnet.utils.deterministic_utils import set_deterministic_pytorch
 from espnet.utils.dynamic_import import dynamic_import
 from espnet.utils.io_utils import LoadInputsAndTargets
-
-if sys.version_info[0] == 2:
-    from itertools import izip_longest as zip_longest
-else:
-    from itertools import zip_longest as zip_longest
 
 
 def _recursive_to(xs, device):

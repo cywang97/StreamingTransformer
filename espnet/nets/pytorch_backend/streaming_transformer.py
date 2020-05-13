@@ -1,4 +1,3 @@
-# Copyright 2019 Shigeki Karita
 #  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 
 """Transformer speech recognition model (pytorch)."""
@@ -28,7 +27,6 @@ from espnet.nets.pytorch_backend.transformer.initializer import initialize
 from espnet.nets.pytorch_backend.transformer.label_smoothing_loss import LabelSmoothingLoss
 from espnet.nets.pytorch_backend.transformer.mask import subsequent_mask
 from espnet.nets.pytorch_backend.transformer.mask import target_mask
-from espnet.nets.pytorch_backend.transformer.plot import PlotAttentionReport
 from espnet.nets.scorers.ctc import CTCPrefixScorer
 
 CTC_LOSS_THRESHOLD = 10000
@@ -99,11 +97,6 @@ class E2E(torch.nn.Module):
                            help='right window size for decoder (look-ahead based method)')
         return parser
 
-    @property
-    def attention_plot_class(self):
-        """Return PlotAttentionReport."""
-        return PlotAttentionReport
-
     def __init__(self, idim, odim, args, ignore_id=-1):
         """Construct an E2E object.
 
@@ -155,15 +148,6 @@ class E2E(torch.nn.Module):
         else:
             self.ctc = None
 
-        if args.report_cer or args.report_wer:
-            from espnet.nets.e2e_asr_common import ErrorCalculator
-            self.error_calculator = ErrorCalculator(args.char_list,
-                                                    args.sym_space, args.sym_blank,
-                                                    args.report_cer, args.report_wer)
-        else:
-            self.error_calculator = None
-
-
         self.rnnlm = None
         self.left_window = args.dec_left_window
         self.right_window = args.dec_right_window
@@ -202,9 +186,7 @@ class E2E(torch.nn.Module):
         hs_pad, _ = self.encoder.encoders(xs, enc_mask)
         if self.encoder.normalize_before:
             hs_pad = self.encoder.after_norm(hs_pad)
-        
-        #hs_pad, _ = self.encoder(xs_pad, enc_mask)
-        #hs_mask = src_mask[:, :, :-2:2][:, :, :-2:2]
+
 
         # CTC forward
         ys = [y[y != self.ignore_id] for y in ys_pad]
@@ -213,7 +195,6 @@ class E2E(torch.nn.Module):
         if dec_mask is not None:
             dec_mask = dec_mask[:, :y_len+1, :hs_pad.shape[1]]
         self.hs_pad = hs_pad
-        cer_ctc = None
         batch_size = xs_pad.size(0)
         if self.mtlalpha == 0.0:
             loss_ctc = None
@@ -221,9 +202,6 @@ class E2E(torch.nn.Module):
             batch_size = xs_pad.size(0)
             hs_len = hs_mask.view(batch_size, -1).sum(1)
             loss_ctc = self.ctc(hs_pad.view(batch_size, -1, self.adim), hs_len, ys_pad)
-            if self.error_calculator is not None:
-                ys_hat = self.ctc.argmax(hs_pad.view(batch_size, -1, self.adim)).data
-                cer_ctc = self.error_calculator(ys_hat.cpu(), ys_pad.cpu(), is_ctc=True)
 
         # trigger mask
         hs_mask = hs_mask & dec_mask if dec_mask is not None else hs_mask
@@ -238,12 +216,6 @@ class E2E(torch.nn.Module):
         self.acc = th_accuracy(pred_pad.view(-1, self.odim), ys_out_pad,
                                ignore_label=self.ignore_id)
 
-        # 5. compute cer/wer
-        if self.training or self.error_calculator is None:
-            cer, wer = None, None
-        else:
-            ys_hat = pred_pad.argmax(dim=-1)
-            cer, wer = self.error_calculator(ys_hat.cpu(), ys_pad.cpu())
 
         # copyied from e2e_asr
         alpha = self.mtlalpha
@@ -260,7 +232,6 @@ class E2E(torch.nn.Module):
             loss_att_data = float(loss_att)
             loss_ctc_data = float(loss_ctc)
 
-        loss_data = float(self.loss)
         return self.loss, loss_ctc_data, loss_att_data, self.acc
 
     def scorers(self):

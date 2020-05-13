@@ -1,0 +1,695 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="b845e608-ee64-422b-824a-0480c93e1bf4" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.circleci/config.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.github/workflows/ci.yaml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/asr/asr_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/espnet/asr/asr_utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/asr/pytorch_backend/asr_ddp.py" beforeDir="false" afterPath="$PROJECT_DIR$/espnet/asr/pytorch_backend/asr_ddp.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/asr/pytorch_backend/asr_recog.py" beforeDir="false" afterPath="$PROJECT_DIR$/espnet/asr/pytorch_backend/asr_recog.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/lm/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/lm/lm_utils.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/lm/pytorch_backend/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/lm/pytorch_backend/extlm.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/lm/pytorch_backend/lm.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/nets/e2e_asr_common.py" beforeDir="false" afterPath="$PROJECT_DIR$/espnet/nets/e2e_asr_common.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/nets/pytorch_backend/e2e_asr_transformer.py" beforeDir="false" afterPath="$PROJECT_DIR$/espnet/nets/pytorch_backend/e2e_asr_transformer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/nets/pytorch_backend/initialization.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/nets/pytorch_backend/lm/seq_rnn.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/nets/pytorch_backend/lm/transformer.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/nets/pytorch_backend/nets_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/espnet/nets/pytorch_backend/nets_utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/nets/pytorch_backend/streaming_transformer.py" beforeDir="false" afterPath="$PROJECT_DIR$/espnet/nets/pytorch_backend/streaming_transformer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/decoder.py" beforeDir="false" afterPath="$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/decoder.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/embedding.py" beforeDir="false" afterPath="$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/embedding.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/encoder.py" beforeDir="false" afterPath="$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/encoder.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/plot.py" beforeDir="false" afterPath="$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/plot.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/nets/pytorch_backend/wavenet.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/nets/scorers/length_bonus.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/transform/add_deltas.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/transform/channel_selector.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/transform/perturb.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/transform/wpe.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/utils/deterministic_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/espnet/utils/deterministic_utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/utils/training/evaluator.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/utils/training/iterators.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/utils/training/tensorboard_logger.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/espnet/utils/training/train_utils.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/generate_wav_from_fbank.py" beforeDir="false" />
+    </list>
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileEditorManager">
+    <leaf>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/espnet/utils/training/batchfy.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="-912">
+              <folding>
+                <element signature="e#0#16#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/espnet/utils/cli_readers.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="-1121">
+              <caret line="10" lean-forward="true" selection-start-line="10" selection-end-line="10" />
+              <folding>
+                <element signature="e#0#9#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/espnet/utils/fill_missing_args.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="266">
+              <caret line="15" lean-forward="true" selection-start-line="15" selection-end-line="15" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/tools/check_install.py">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/espnet/utils/dynamic_import.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="-81" />
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/espnet/utils/deterministic_utils.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="356">
+              <caret line="21" selection-start-line="21" selection-end-line="21" />
+              <folding>
+                <element signature="e#0#14#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/espnet/utils/spec_augment.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="-1995" />
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/espnet/utils/io_utils.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state>
+              <folding>
+                <element signature="e#0#35#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/.github/workflows/pythonpublish.yml">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="228">
+              <caret line="12" lean-forward="true" selection-start-line="12" selection-end-line="12" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+    </leaf>
+  </component>
+  <component name="FindInProjectRecents">
+    <findStrings>
+      <find>dist</find>
+      <find>logging</find>
+      <find>cudnn</find>
+      <find>load_trained_model</find>
+      <find>TransformData</find>
+      <find>ChainerData</find>
+      <find>set_determin</find>
+      <find>np.</find>
+      <find>extension</find>
+      <find>pre_</find>
+      <find>rnnlm</find>
+      <find>Error</find>
+    </findStrings>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="IdeDocumentHistory">
+    <option name="CHANGED_PATHS">
+      <list>
+        <option value="$PROJECT_DIR$/espnet/asr/pytorch_backend/asr_ddp.py" />
+        <option value="$PROJECT_DIR$/espnet/asr/pytorch_backend/asr_recog.py" />
+        <option value="$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/plot.py" />
+        <option value="$PROJECT_DIR$/espnet/asr/asr_utils.py" />
+        <option value="$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/embedding.py" />
+        <option value="$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/encoder.py" />
+        <option value="$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/decoder.py" />
+        <option value="$PROJECT_DIR$/espnet/nets/pytorch_backend/nets_utils.py" />
+        <option value="$PROJECT_DIR$/espnet/nets/e2e_asr_common.py" />
+        <option value="$PROJECT_DIR$/espnet/nets/pytorch_backend/streaming_transformer.py" />
+        <option value="$PROJECT_DIR$/espnet/nets/pytorch_backend/e2e_asr_transformer.py" />
+        <option value="$PROJECT_DIR$/espnet/utils/training/train_utils.py" />
+        <option value="$PROJECT_DIR$/espnet/utils/deterministic_utils.py" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectFrameBounds" extendedState="6">
+    <option name="x" value="-530" />
+    <option name="y" value="151" />
+    <option name="width" value="1940" />
+    <option name="height" value="1050" />
+  </component>
+  <component name="ProjectView">
+    <navigator proportions="" version="1">
+      <foldersAlwaysOnTop value="true" />
+    </navigator>
+    <panes>
+      <pane id="Scope" />
+      <pane id="ProjectPane">
+        <subPane>
+          <expand>
+            <path>
+              <item name="StreamingTransformer" type="b2602c69:ProjectViewProjectNode" />
+              <item name="StreamingTransformer" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="StreamingTransformer" type="b2602c69:ProjectViewProjectNode" />
+              <item name="StreamingTransformer" type="462c0819:PsiDirectoryNode" />
+              <item name=".github" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="StreamingTransformer" type="b2602c69:ProjectViewProjectNode" />
+              <item name="StreamingTransformer" type="462c0819:PsiDirectoryNode" />
+              <item name=".github" type="462c0819:PsiDirectoryNode" />
+              <item name="workflows" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="StreamingTransformer" type="b2602c69:ProjectViewProjectNode" />
+              <item name="StreamingTransformer" type="462c0819:PsiDirectoryNode" />
+              <item name="espnet" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="StreamingTransformer" type="b2602c69:ProjectViewProjectNode" />
+              <item name="StreamingTransformer" type="462c0819:PsiDirectoryNode" />
+              <item name="espnet" type="462c0819:PsiDirectoryNode" />
+              <item name="nets" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="StreamingTransformer" type="b2602c69:ProjectViewProjectNode" />
+              <item name="StreamingTransformer" type="462c0819:PsiDirectoryNode" />
+              <item name="espnet" type="462c0819:PsiDirectoryNode" />
+              <item name="nets" type="462c0819:PsiDirectoryNode" />
+              <item name="pytorch_backend" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="StreamingTransformer" type="b2602c69:ProjectViewProjectNode" />
+              <item name="StreamingTransformer" type="462c0819:PsiDirectoryNode" />
+              <item name="espnet" type="462c0819:PsiDirectoryNode" />
+              <item name="nets" type="462c0819:PsiDirectoryNode" />
+              <item name="pytorch_backend" type="462c0819:PsiDirectoryNode" />
+              <item name="lm" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="StreamingTransformer" type="b2602c69:ProjectViewProjectNode" />
+              <item name="StreamingTransformer" type="462c0819:PsiDirectoryNode" />
+              <item name="espnet" type="462c0819:PsiDirectoryNode" />
+              <item name="nets" type="462c0819:PsiDirectoryNode" />
+              <item name="pytorch_backend" type="462c0819:PsiDirectoryNode" />
+              <item name="transformer" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="StreamingTransformer" type="b2602c69:ProjectViewProjectNode" />
+              <item name="StreamingTransformer" type="462c0819:PsiDirectoryNode" />
+              <item name="espnet" type="462c0819:PsiDirectoryNode" />
+              <item name="nets" type="462c0819:PsiDirectoryNode" />
+              <item name="scorers" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="StreamingTransformer" type="b2602c69:ProjectViewProjectNode" />
+              <item name="StreamingTransformer" type="462c0819:PsiDirectoryNode" />
+              <item name="espnet" type="462c0819:PsiDirectoryNode" />
+              <item name="transform" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="StreamingTransformer" type="b2602c69:ProjectViewProjectNode" />
+              <item name="StreamingTransformer" type="462c0819:PsiDirectoryNode" />
+              <item name="espnet" type="462c0819:PsiDirectoryNode" />
+              <item name="utils" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="StreamingTransformer" type="b2602c69:ProjectViewProjectNode" />
+              <item name="StreamingTransformer" type="462c0819:PsiDirectoryNode" />
+              <item name="espnet" type="462c0819:PsiDirectoryNode" />
+              <item name="utils" type="462c0819:PsiDirectoryNode" />
+              <item name="training" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="StreamingTransformer" type="b2602c69:ProjectViewProjectNode" />
+              <item name="StreamingTransformer" type="462c0819:PsiDirectoryNode" />
+              <item name="tools" type="462c0819:PsiDirectoryNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
+    </panes>
+  </component>
+  <component name="PropertiesComponent">
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="b845e608-ee64-422b-824a-0480c93e1bf4" name="Default Changelist" comment="" />
+      <created>1589371585290</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1589371585290</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="ToolWindowManager">
+    <frame x="-7" y="-7" width="1550" height="838" extended-state="6" />
+    <editor active="true" />
+    <layout>
+      <window_info id="Favorites" side_tool="true" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.24966975" />
+      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
+      <window_info anchor="bottom" id="Version Control" />
+      <window_info anchor="bottom" id="Python Console" />
+      <window_info anchor="bottom" id="Terminal" />
+      <window_info anchor="bottom" id="Event Log" side_tool="true" />
+      <window_info anchor="bottom" id="Message" order="0" />
+      <window_info anchor="bottom" id="Find" order="1" visible="true" weight="0.26345608" />
+      <window_info anchor="bottom" id="Run" order="2" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="bottom" id="TODO" order="6" />
+      <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
+      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+    </layout>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/plot.py</url>
+          <line>6</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+  <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/espnet/asr/pytorch_backend/asr_recog.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-2327">
+          <caret line="11" selection-start-line="11" selection-end-line="11" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/plot.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="178">
+          <caret line="10" selection-start-line="10" selection-end-line="50" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/asr/asr_utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="198">
+          <caret line="141" column="14" selection-start-line="141" selection-start-column="5" selection-end-line="141" selection-end-column="14" />
+          <folding>
+            <element signature="e#144#159#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/bin/asr_recog.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-2565">
+          <caret line="9" column="9" selection-start-line="9" selection-start-column="9" selection-end-line="9" selection-end-column="9" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/add_sos_eos.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="209">
+          <caret line="11" column="9" lean-forward="true" selection-start-line="11" selection-start-column="9" selection-end-line="11" selection-end-column="9" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/attention.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-552">
+          <caret line="23" column="6" selection-start-line="23" selection-start-column="6" selection-end-line="23" selection-end-column="6" />
+          <folding>
+            <element signature="e#187#198#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/decoder_layer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="151">
+          <caret line="8" selection-start-line="8" selection-end-line="8" />
+          <folding>
+            <element signature="e#189#201#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/embedding.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="481">
+          <caret line="63" selection-start-line="63" selection-end-line="63" />
+          <folding>
+            <element signature="e#175#186#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/encoder.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="157">
+          <caret line="155" column="17" lean-forward="true" selection-start-line="155" selection-start-column="17" selection-end-line="155" selection-end-column="17" />
+          <folding>
+            <element signature="e#168#180#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/encoder_layer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1198" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/initializer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-285" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/label_smoothing_loss.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-666" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/layer_norm.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-115" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/mask.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-57" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils/generate_wav_from_fbank.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="164">
+          <caret line="21" column="5" selection-start-line="21" selection-start-column="5" selection-end-line="21" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/pytorch_backend/wavenet.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/scorers/length_bonus.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/scorers/ctc.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/ctc_prefix_score.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/transform/add_deltas.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/pytorch_backend/transformer/decoder.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="164">
+          <caret line="14" selection-start-line="14" selection-end-line="14" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/pytorch_backend/nets_utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2797">
+          <caret line="168" column="17" selection-start-line="168" selection-start-column="17" selection-end-line="168" selection-end-column="17" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/pytorch_backend/initialization.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="950">
+          <caret line="50" column="19" selection-start-line="50" selection-start-column="19" selection-end-line="50" selection-end-column="19" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/pytorch_backend/lm/transformer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="95">
+          <caret line="17" column="14" lean-forward="true" selection-start-line="17" selection-start-column="14" selection-end-line="17" selection-end-column="14" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/pytorch_backend/lm/seq_rnn.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-2950" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/lm/pytorch_backend/lm.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="931">
+          <caret line="88" column="12" selection-start-line="88" selection-start-column="12" selection-end-line="88" selection-end-column="12" />
+          <folding>
+            <element signature="e#336#347#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils/apply-cmvn.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="152">
+          <caret line="8" column="5" selection-start-line="8" selection-start-column="5" selection-end-line="8" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/pytorch_backend/e2e_asr_transformer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="19">
+          <caret line="6" selection-start-line="6" selection-end-line="6" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/scorer_interface.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1306">
+          <caret line="111" lean-forward="true" selection-start-line="111" selection-end-line="111" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/lm_interface.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/transform/cmvn.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="133">
+          <caret line="7" column="8" selection-start-line="7" selection-start-column="8" selection-end-line="7" selection-end-column="8" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/transform/functional.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-285">
+          <caret line="6" column="12" selection-start-line="6" selection-start-column="12" selection-end-line="6" selection-end-column="12" />
+          <folding>
+            <element signature="e#0#14#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/pytorch_backend/streaming_transformer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-4053">
+          <caret line="178" column="42" lean-forward="true" selection-start-line="178" selection-start-column="42" selection-end-line="178" selection-end-column="42" />
+          <folding>
+            <element signature="e#148#178#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/pytorch_backend/lm/default.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="95">
+          <caret line="15" column="18" selection-start-line="15" selection-start-column="6" selection-end-line="15" selection-end-column="18" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/nets/e2e_asr_common.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="76">
+          <caret line="87" column="16" lean-forward="true" selection-start-line="87" selection-start-column="16" selection-end-line="87" selection-end-column="16" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/utils/training/evaluator.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="95">
+          <caret line="5" column="12" selection-start-line="5" selection-start-column="12" selection-end-line="5" selection-end-column="12" />
+          <folding>
+            <element signature="e#0#49#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/utils/training/iterators.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-24">
+          <caret line="81" column="14" selection-start-line="81" selection-start-column="14" selection-end-line="81" selection-end-column="14" />
+          <folding>
+            <element signature="e#0#14#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/utils/training/tensorboard_logger.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-385">
+          <caret line="3" column="12" selection-start-line="3" selection-start-column="12" selection-end-line="3" selection-end-column="12" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/utils/training/train_utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="57">
+          <caret line="3" column="10" selection-start-line="3" selection-start-column="10" selection-end-line="3" selection-end-column="10" />
+          <folding>
+            <element signature="e#0#14#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/utils/training/batchfy.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-912">
+          <folding>
+            <element signature="e#0#16#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/utils/cli_readers.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1121">
+          <caret line="10" lean-forward="true" selection-start-line="10" selection-end-line="10" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/utils/fill_missing_args.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="266">
+          <caret line="15" lean-forward="true" selection-start-line="15" selection-end-line="15" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tools/check_install.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/utils/dynamic_import.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-81" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/utils/deterministic_utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="356">
+          <caret line="21" selection-start-line="21" selection-end-line="21" />
+          <folding>
+            <element signature="e#0#14#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/transform/perturb.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="228">
+          <caret line="105" column="24" lean-forward="true" selection-start-line="6" selection-end-line="105" selection-end-column="24" />
+          <folding>
+            <element signature="e#0#14#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/utils/spec_augment.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1995" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.circleci/config.yml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-798" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.github/workflows/ci.yaml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-304">
+          <caret line="5" column="17" selection-start-line="5" selection-start-column="2" selection-end-line="5" selection-end-column="17" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/espnet/utils/io_utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <folding>
+            <element signature="e#0#35#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.github/workflows/pythonpublish.yml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="228">
+          <caret line="12" lean-forward="true" selection-start-line="12" selection-end-line="12" />
+        </state>
+      </provider>
+    </entry>
+  </component>
+</project>
