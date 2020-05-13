@@ -11,6 +11,7 @@ import time
 
 import logging
 import math
+import numpy as np
 
 import torch
 
@@ -256,7 +257,6 @@ class E2E(torch.nn.Module):
         return enc_output.squeeze(0)
 
     def viterbi_decode(self, x, y, mask=None):
-        pdb.set_trace()
         enc_output = self.encode(x)
         logits = self.ctc.ctc_lo(enc_output).detach().data
         logit = np.array(logits.cpu().data).T

@@ -621,6 +621,32 @@ def parse_hypothesis(hyp, char_list):
 
     return text, token, tokenid, score
 
+def add_single_results(js, best, best_token, score):
+    new_js = dict()
+    new_js['utt2spk'] = js['utt2spk']
+    new_js['output'] = []
+
+    text = best.replace('<eos>', '')
+    rec_text = text
+    rec_tokenid = best_token[1:]
+    out_dic = dict(js['output'][0].items())
+
+    # update name
+    out_dic['name'] += '[0]'
+
+        # add recognition results
+    out_dic['rec_text'] = rec_text
+    out_dic['rec_token'] = rec_text
+    out_dic['rec_tokenid'] = ' '.join(map(str, rec_tokenid))
+    out_dic['score'] = float(score)
+
+    # add to list of N-best result dicts
+    new_js['output'].append(out_dic)
+    if 'text' in out_dic.keys():
+        logging.info('groundtruth: %s' % out_dic['text'])
+    logging.info('prediction : %s' % out_dic['rec_text'])
+    return new_js
+
 
 def add_results_to_json(js, nbest_hyps, char_list):
     """Add N-best results to json.

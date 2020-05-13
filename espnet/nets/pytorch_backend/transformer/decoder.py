@@ -153,7 +153,7 @@ class Decoder(BatchScorerInterface, torch.nn.Module):
             x = self.output_layer(x)
         return x, tgt_mask
 
-    def forward_one_step(self, tgt, tgt_mask, memory, cache=None):
+    def forward_one_step(self, tgt, tgt_mask, memory, memory_mask=None, cache=None):
         """Forward one step.
 
         :param torch.Tensor tgt: input token ids, int64 (batch, maxlen_out)
@@ -173,7 +173,7 @@ class Decoder(BatchScorerInterface, torch.nn.Module):
         new_cache = []
         for c, decoder in zip(cache, self.decoders):
             x, tgt_mask, memory, memory_mask = decoder(
-                x, tgt_mask, memory, None, cache=c
+                x, tgt_mask, memory, memory_mask, cache=c
             )
             new_cache.append(x)
 

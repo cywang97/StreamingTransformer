@@ -85,6 +85,7 @@ class DecoderLayer(nn.Module):
             ), f"{cache.shape} == {(tgt.shape[0], tgt.shape[1] - 1, self.size)}"
             tgt_q = tgt[:, -1:, :]
             residual = residual[:, -1:, :]
+            memory_mask = memory_mask[:, -1:, :]
             tgt_q_mask = None
             if tgt_mask is not None:
                 tgt_q_mask = tgt_mask[:, -1:, :]

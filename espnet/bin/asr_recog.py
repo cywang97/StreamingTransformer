@@ -11,6 +11,10 @@ import logging
 import os
 import random
 import sys
+if "/home/espnet" in sys.path:
+    sys.path.remove("/home/espnet")
+ESPNET_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
+sys.path.insert(0, ESPNET_ROOT)
 
 import numpy as np
 
@@ -104,6 +108,10 @@ def get_parser():
     parser.add_argument("--lm-weight", type=float, default=0.1, help="RNNLM weight")
     # streaming related
     parser.add_argument("--viterbi", type=strtobool, default=False)
+    # decode related 
+    parser.add_argument("--threshold", type=float, default=0.001, help="prune threshold for ctc prefix decoding")
+    parser.add_argument("--ctc-lm-weight", type=float, default=0.5, help="lm weight for ctc local score")
+    parser.add_argument("--prefix-decode", type=strtobool, default=False, help="prefix decoding for straming transformer")
     return parser
 
 
@@ -164,13 +172,11 @@ def main(args):
         sys.exit(1)
 
     # recog
-    logging.info("backend = " + args.backend)
-
     if not args.viterbi:
-        from espnet.asr.pytorch_backend.asr import recog
+        from espnet.asr.pytorch_backend.asr_recog import recog
         recog(args)
     else:
-        from espnet.asr.pytorch_backend.asr import viterbi_decode
+        from espnet.asr.pytorch_backend.asr_recog import viterbi_decode
         viterbi_decode(args)
 
 

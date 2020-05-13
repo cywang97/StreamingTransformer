@@ -246,7 +246,10 @@ class StreamingConverter(MaskConverter):
         else:
             ys_pad = pad_list([torch.from_numpy(y) for y in ys],
                               self.ignore_id).long().to(self.device)
-        seq_len = ((ilens[0].item()+1)//2+1)//2
+        if self.args.transformer_input_layer == 'custom':
+            seq_len = ((ilens[0].item()+1)//2+1)//2
+        else:
+            seq_len = ((ilens[0].item()-1)//2-1)//2
         batch_size = len(xs)
         align = pad_list([torch.from_numpy(y).long() for y in align], seq_len-1).to(self.device)
         align = torch.nn.functional.pad(align, (0,1), value=seq_len-1)

@@ -10,11 +10,12 @@ import json
 import logging
 import os
 import sys
+import pdb
 
 import numpy as np
 import torch
 
-from espnet.asr.asr_utils import add_results_to_json
+from espnet.asr.asr_utils import add_results_to_json, add_single_results
 from espnet.asr.asr_utils import get_model_conf
 from espnet.asr.asr_utils import torch_load
 from espnet.asr.pytorch_backend.asr_init import load_trained_model
@@ -100,12 +101,17 @@ def recog(args):
             batch = [(name, js[name])]
             feat = load_inputs_and_targets(batch)
             feat = feat[0][0]
-            nbest_hyps = model.recognize(
-                feat, args, train_args.char_list, rnnlm
-            )
-            new_js[name] = add_results_to_json(
-                js[name], nbest_hyps, train_args.char_list
-            )
+            pdb.set_trace()
+            if args.prefix_decode:
+                best, ids, score = model.prefix_recognize(feat, args, train_args, train_args.char_list, rnnlm)
+                new_js[name] = add_single_results(js[name], best, ids, score)
+            else:
+                nbest_hyps = model.recognize(
+                    feat, args, train_args.char_list, rnnlm
+                )
+                new_js[name] = add_results_to_json(
+                    js[name], nbest_hyps, train_args.char_list
+                )
 
 
     with open(args.result_label, "wb") as f:
@@ -121,16 +127,14 @@ def viterbi_decode(args):
         args.model, os.path.join(os.path.dirname(args.model), 'model.json'))
     model_class = dynamic_import(train_args.model_module)
     model = model_class(idim, odim, train_args)
-    assert isinstance(model, ASRInterface)
     if args.model is not None:
-        load_params = dict(torch.load(args.model))
+        load_params = dict(torch.load(args.model)['state_dict'])
         model_params = dict(model.named_parameters())
         for k, v in load_params.items():
             k = k.replace('module.', '')
             if k in model_params and v.size() == model_params[k].size():
                 model_params[k].data = v.data
                 logging.warning('load parameters {}'.format(k))
-    assert isinstance(model, ASRInterface)
     model.recog_args = args
 
     if args.ngpu == 1:
@@ -156,7 +160,7 @@ def viterbi_decode(args):
             batch = [(name, js[name])]
             feat = load_inputs_and_targets(batch)
             y = np.fromiter(map(int, batch[0][1]['output'][0]['tokenid'].split()), dtype=np.int64)
-            align = model.viterbi_decode(feat[0][0], y, mask)
+            align = model.viterbi_decode(feat[0][0], y)
             assert len(align) == len(y)
             new_js[name] = js[name]
             new_js[name]['output'][0]['align'] = ' '.join([str(i) for i in list(align)])

@@ -11,12 +11,14 @@ import time
 
 import logging
 import math
+import numpy as np
 
 import torch
 
 from espnet.nets.pytorch_backend.ctc import CTC
 from espnet.nets.pytorch_backend.nets_utils import make_non_pad_mask
 from espnet.nets.pytorch_backend.nets_utils import th_accuracy
+from espnet.nets.pytorch_backend.nets_utils import adaptive_enc_mask, turncated_mask
 from espnet.nets.pytorch_backend.transformer.add_sos_eos import add_sos_eos
 from espnet.nets.pytorch_backend.transformer.attention import MultiHeadedAttention
 from espnet.nets.pytorch_backend.transformer.decoder import Decoder
@@ -30,6 +32,7 @@ from espnet.nets.pytorch_backend.transformer.plot import PlotAttentionReport
 from espnet.nets.scorers.ctc import CTCPrefixScorer
 
 CTC_LOSS_THRESHOLD = 10000
+CTC_SCORING_RATIO = 1.5
 
 class E2E(torch.nn.Module):
     """E2E module.
@@ -350,7 +353,6 @@ class E2E(torch.nn.Module):
             hyp['ctc_score_prev'] = 0.0
             if ctc_weight != 1.0:
                 # pre-pruning based on attention scores
-                from espnet.nets.pytorch_backend.rnn.decoders import CTC_SCORING_RATIO
                 ctc_beam = min(lpz.shape[-1], int(beam * CTC_SCORING_RATIO))
             else:
                 ctc_beam = lpz.shape[-1]
@@ -480,6 +482,381 @@ class E2E(torch.nn.Module):
         logging.info('total log probability: ' + str(nbest_hyps[0]['score']))
         logging.info('normalized log probability: ' + str(nbest_hyps[0]['score'] / len(nbest_hyps[0]['yseq'])))
         return nbest_hyps
+
+    def prefix_recognize(self, x, recog_args, train_args, char_list=None, rnnlm=None):
+        '''recognize feat
+
+        :param ndnarray x: input acouctic feature (B, T, D) or (T, D)
+        :param namespace recog_args: argment namespace contraining options
+        :param list char_list: list of characters
+        :param torch.nn.Module rnnlm: language model module
+        :return: N-best decoding results
+        :rtype: list
+
+        TODO(karita): do not recompute previous attention for faster decoding
+        '''
+        pad_len = self.eos - len(char_list) + 1
+        for i in range(pad_len):
+            char_list.append('<eos>')
+        seq_len = ((x.shape[0]-1)//2-1)//2
+        if train_args.chunk:
+            s = np.arange(0, seq_len, train_args.chunk_size)
+            mask = adaptive_enc_mask(seq_len, s).unsqueeze(0)
+        else:
+            mask = turncated_mask(1, seq_len, train_args.left_window, train_args.right_window)
+        enc_output = self.encode(x, mask).unsqueeze(0)
+        lpz = torch.nn.functional.softmax(self.ctc.ctc_lo(enc_output), dim=-1)
+        lpz = lpz.squeeze(0)
+
+        h = enc_output.squeeze(0)
+
+        logging.info('input lengths: ' + str(h.size(0)))
+        h_len = h.size(0)
+        # search parms
+        beam = recog_args.beam_size
+        penalty = recog_args.penalty
+        ctc_weight = recog_args.ctc_weight
+
+        # preprare sos
+        y = self.sos
+        vy = h.new_zeros(1).long()
+        if recog_args.maxlenratio == 0:
+            maxlen = h.shape[0]
+        else:
+            # maxlen >= 1
+            maxlen = max(1, int(recog_args.maxlenratio * h.size(0)))
+        minlen = int(recog_args.minlenratio * h.size(0))
+        logging.info('max output length: ' + str(maxlen))
+        logging.info('min output length: ' + str(minlen))
+        hyp = {'score': 0.0, 'yseq': [y], 'rnnlm_prev': None, 'seq': char_list[y],
+               'last_time': [], "ctc_score": 0.0, "rnnlm_score": 0.0, "att_score": 0.0,
+               "cache": None, "precache": None, "preatt_score": 0.0, "prev_score": 0.0}
+
+        hyps = {char_list[y]: hyp}
+        hyps_att = {char_list[y]: hyp}
+        Pb_prev, Pnb_prev = Counter(), Counter()
+        Pb, Pnb = Counter(), Counter()
+        Pjoint = Counter()
+        lpz = lpz.cpu().detach().numpy()
+        vocab_size = lpz.shape[1]
+        r = np.ndarray((vocab_size), dtype=np.float32)
+        l = char_list[y]
+        Pb_prev[l] = 1
+        Pnb_prev[l] = 0
+        A_prev = [l]
+        A_prev_id = [[y]]
+        vy.unsqueeze(1)
+        total_copy = time.time() - time.time()
+        samelen = 0
+        hat_att = {}
+        chunk_pos = set(np.array(mask.sum(dim=-1))[0])
+        for i in chunk_pos:
+            hat_att[i] = {}
+
+        for i in range(h_len):
+            hyps_ctc = {}
+            threshold = recog_args.threshold  # self.threshold #np.percentile(r, 98)
+            pos_ctc = np.where(lpz[i] > threshold)[0]
+            # self.removeIlegal(hyps)
+
+            chunk_index = mask[0][i].sum().item()
+            hyps_res = {}
+            if train_args.chunk:
+                for l, hyp in hyps.items():
+                    if l in hat_att[chunk_index]:
+                        hyp['tmp_cache'] = hat_att[chunk_index][l]['cache']
+                        hyp['tmp_att'] = hat_att[chunk_index][l]['att_scores']
+                    else:
+                        hyps_res[l] = hyp
+            else:
+                hyps_res = hyps
+
+            tmp = self.clusterbyLength(hyps_res)  # This step clusters hyps according to length dict:{length,hyps}
+            start = time.time()
+
+            # pre-compute beam
+            self.compute_hyps(tmp, i, h_len, enc_output, train_args, hat_att[chunk_index], mask)
+            total_copy += time.time() - start
+            # Assign score and tokens to hyps
+            # print(hyps.keys())
+            for l, hyp in hyps.items():
+                if 'tmp_att' not in hyp:
+                    continue  # Todo check why
+                local_att_scores = hyp['tmp_att']
+                local_best_scores, local_best_ids = torch.topk(local_att_scores, 5, dim=1)
+                pos_att = np.array(local_best_ids[0].cpu())
+                pos = np.union1d(pos_ctc, pos_att)
+                hyp['pos'] = pos
+
+            # pre-compute ctc beam
+            hyps_ctc_compute = self.get_ctchyps2compute(hyps, hyps_ctc, i)
+            hyps_res2 = {}
+            if train_args.chunk:
+                for l, hyp in hyps_ctc_compute.items():
+                    l_minus = ' '.join(l.split()[:-1])
+                    if l_minus in hat_att[chunk_index]:
+                        hyp['tmp_cur_new_cache'] = hat_att[chunk_index][l_minus]['cache']
+                        hyp['tmp_cur_att_scores'] = hat_att[chunk_index][l_minus]['att_scores']
+                    else:
+                        hyps_res2[l] = hyp
+            else:
+                hyps_res2 = hyps_ctc_compute
+            tmp2_cluster = self.clusterbyLength(hyps_res2)
+            self.compute_hyps_ctc(tmp2_cluster, h_len, enc_output, train_args, hat_att[chunk_index], mask)
+
+            for l, hyp in hyps.items():
+                start = time.time()
+                l_id = hyp['yseq']
+                l_end = l_id[-1]
+                vy[0] = l_end
+                prefix_len = len(l_id)
+                if rnnlm:
+                    rnnlm_state, local_lm_scores = rnnlm.predict(hyp['rnnlm_prev'], vy)
+                else:
+                    rnnlm_state = None
+                    local_lm_scores = torch.zeros([1, len(char_list)])
+
+                r = lpz[i] * (Pb_prev[l] + Pnb_prev[l])
+
+                start = time.time()
+                if 'tmp_att' not in hyp:
+                    continue  # Todo check why
+                local_att_scores = hyp['tmp_att']
+                new_cache = hyp['tmp_cache']
+                align = [0] * prefix_len
+                new_cache = hyp['tmp_cache']
+                align = [0] * prefix_len
+                align[:prefix_len - 1] = hyp['last_time'][:]
+                align[-1] = i
+                pos = hyp['pos']
+                if 0 in pos or l_end in pos:
+                    if l not in hyps_ctc:
+                        hyps_ctc[l] = {'yseq': l_id}
+                        hyps_ctc[l]['rnnlm_prev'] = hyp['rnnlm_prev']
+                        hyps_ctc[l]['rnnlm_score'] = hyp['rnnlm_score']
+                        if l_end != self.eos:
+                            hyps_ctc[l]['last_time'] = [0] * prefix_len
+                            hyps_ctc[l]['last_time'][:] = hyp['last_time'][:]
+                            hyps_ctc[l]['last_time'][-1] = i
+                            cur_att_scores = hyps_ctc_compute[l]["tmp_cur_att_scores"]
+                            cur_new_cache = hyps_ctc_compute[l]["tmp_cur_new_cache"]
+                            hyps_ctc[l]['att_score'] = hyp['preatt_score'] + \
+                                                       float(cur_att_scores[0, l_end].data)
+                            hyps_ctc[l]['cur_att'] = float(cur_att_scores[0, l_end].data)
+                            hyps_ctc[l]['cache'] = cur_new_cache
+                        else:
+                            if len(hyps_ctc[l]["yseq"]) > 1:
+                                hyps_ctc[l]["end"] = True
+                            hyps_ctc[l]['last_time'] = []
+                            hyps_ctc[l]['att_score'] = hyp['att_score']
+                            hyps_ctc[l]['cur_att'] = 0
+                            hyps_ctc[l]['cache'] = hyp['cache']
+
+                        hyps_ctc[l]['prev_score'] = hyp['prev_score']
+                        hyps_ctc[l]['preatt_score'] = hyp['preatt_score']
+                        hyps_ctc[l]['precache'] = hyp['precache']
+                        hyps_ctc[l]['seq'] = hyp['seq']
+
+                for c in list(pos):
+                    if c == 0:
+                        Pb[l] += lpz[i][0] * (Pb_prev[l] + Pnb_prev[l])
+                    else:
+                        l_plus = l + " " + char_list[c]
+                        if l_plus not in hyps_ctc:
+                            hyps_ctc[l_plus] = {}
+                            if "end" in hyp:
+                                hyps_ctc[l_plus]['yseq'] = True
+                            hyps_ctc[l_plus]['yseq'] = [0] * (prefix_len + 1)
+                            hyps_ctc[l_plus]['yseq'][:len(hyp['yseq'])] = l_id
+                            hyps_ctc[l_plus]['yseq'][-1] = int(c)
+                            hyps_ctc[l_plus]['rnnlm_prev'] = rnnlm_state
+                            hyps_ctc[l_plus]['rnnlm_score'] = hyp['rnnlm_score'] + float(
+                                local_lm_scores[0, c].data)
+                            hyps_ctc[l_plus]['att_score'] = hyp['att_score'] \
+                                                            + float(local_att_scores[0, c].data)
+                            hyps_ctc[l_plus]['cur_att'] = float(local_att_scores[0, c].data)
+                            hyps_ctc[l_plus]['cache'] = new_cache
+                            hyps_ctc[l_plus]['precache'] = hyp['cache']
+                            hyps_ctc[l_plus]['preatt_score'] = hyp['att_score']
+                            hyps_ctc[l_plus]['prev_score'] = hyp['score']
+                            hyps_ctc[l_plus]['last_time'] = align
+                            hyps_ctc[l_plus]['rule_penalty'] = 0
+                            hyps_ctc[l_plus]['seq'] = l_plus
+                        if l_end != self.eos and c == l_end:
+                            Pnb[l_plus] += lpz[i][l_end] * Pb_prev[l]
+                            Pnb[l] += lpz[i][l_end] * Pnb_prev[l]
+                        else:
+                            Pnb[l_plus] += r[c]
+
+                        if l_plus not in hyps:
+                            Pb[l_plus] += lpz[i][0] * (Pb_prev[l_plus] + Pnb_prev[l_plus])
+                            Pb[l_plus] += lpz[i][c] * Pnb_prev[l_plus]
+            # total_copy += time.time() - start
+            for l in hyps_ctc.keys():
+                if Pb[l] != 0 or Pnb[l] != 0:
+                    hyps_ctc[l]['ctc_score'] = np.log(Pb[l] + Pnb[l])
+                else:
+                    hyps_ctc[l]['ctc_score'] = float('-inf')
+                # local_score = hyps_ctc[l]['ctc_score'] + recog_args.ctc_lm_weight * hyps_ctc[l][
+                #     'rnnlm_score'] + \
+                #               recog_args.penalty * (len(hyps_ctc[l]['yseq']))
+                # hyps_ctc[l]['local_score'] = local_score
+
+                # hyps_ctc[l]['score'] = (1 - recog_args.ctc_weight) * hyps_ctc[l]['att_score'] \
+                #                        + recog_args.ctc_weight * hyps_ctc[l]['ctc_score'] + \
+                #                        recog_args.penalty * (len(hyps_ctc[l]['yseq'])) + \
+                #                        recog_args.lm_weight * hyps_ctc[l]['rnnlm_score']
+                local_score =  hyps_ctc[l]['ctc_score']\
+                              + recog_args.penalty * len(hyps_ctc[l]['yseq'])
+                hyps_ctc[l]['local_score'] = local_score + recog_args.ctc_weight * hyps_ctc[l]['ctc_score'] + hyps_ctc[l]['prev_score']
+
+                hyps_ctc[l]['score'] = (1-recog_args.ctc_weight) * hyps_ctc[l]['att_score'] \
+                                      + recog_args.ctc_weight * hyps_ctc[l]['ctc_score'] +  recog_args.penalty * len(hyps_ctc[l]['yseq'])
+
+            Pb_prev = Pb
+            Pnb_prev = Pnb
+            Pb = Counter()
+            Pnb = Counter()
+            hyps1 = sorted(hyps_ctc.items(),
+                           key=lambda x: x[1]['local_score'],reverse=True)[:min(2*beam,len(hyps_ctc))]
+            hyps = sorted(hyps1, key=lambda x: x[1]['score'], reverse=True)[:beam]
+            hyps = dict(hyps)
+
+        hyps = sorted(hyps.items(), key=lambda x: x[1]['score'], reverse=True)[:beam]
+        hyps = dict(hyps)
+        logging.info('input lengths: ' + str(h.size(0)))
+        logging.info('max output length: ' + str(maxlen))
+        logging.info('min output length: ' + str(minlen))
+        if "<eos>" in hyps.keys():
+            del hyps["<eos>"]
+
+        best = list(hyps.keys())[0]
+        ids = hyps[best]['yseq']
+        score = hyps[best]['score']
+        # if l in hyps.keys():
+        #    logging.info(l)
+
+        # print(samelen,h_len)
+        return best, ids, score
+
+    def clusterbyLength(self, hyps):
+        tmp = {}
+        for l, hyp in hyps.items():
+            prefix_len = len(hyp['yseq'])
+            if prefix_len > 1 and hyp['yseq'][-1] == self.eos:
+                continue
+            else:
+                if prefix_len not in tmp:
+                    tmp[prefix_len] = []
+                tmp[prefix_len].append(hyp)
+        return tmp
+
+    def compute_hyps(self, current_hyps, curren_frame, total_frame, enc_output, args, hat_att, enc_mask=None):
+        for length, hyps_t in current_hyps.items():
+            ys_mask = subsequent_mask(length).unsqueeze(0).cuda()
+            ys_mask4use = ys_mask.repeat(len(hyps_t), 1, 1)
+
+            # print(ys_mask4use.shape)
+            l_id = [hyp_t['yseq'] for hyp_t in hyps_t]
+            ys4use = torch.tensor(l_id).cuda()
+            enc_output4use = enc_output.repeat(len(hyps_t), 1, 1)
+            if hyps_t[0]["cache"] is None:
+                cache4use = None
+            else:
+                cache4use = []
+                for decode_num in range(len(hyps_t[0]["cache"])):
+                    current_cache = []
+                    for hyp_t in hyps_t:
+                        current_cache.append(hyp_t["cache"][decode_num].squeeze(0))
+                    # print( torch.stack(current_cache).shape)
+
+                    current_cache = torch.stack(current_cache)
+                    cache4use.append(current_cache)
+
+            partial_mask4use = []
+            for hyp_t in hyps_t:
+                align = [0] * length
+                align[:length - 1] = hyp_t['last_time'][:]
+                align[-1] = curren_frame
+                align_tensor = torch.tensor(align).unsqueeze(0)
+                if args.chunk:
+                    partial_mask4use.append(enc_mask[0][align_tensor])
+                else:
+                    h_len = enc_output.shape[1]
+                    partial_mask4use.append(trigger_mask(1, h_len, align_tensor, args.dec_left_window, args.dec_right_window))
+            partial_mask4use = torch.stack(partial_mask4use).cuda().squeeze(1)
+            local_att_scores_b, new_cache_b = self.decoder.forward_one_step(ys4use, ys_mask4use,
+                                                                            enc_output4use, partial_mask4use, cache4use)
+            for idx, hyp_t in enumerate(hyps_t):
+                hyp_t['tmp_cache'] = [new_cache_b[decode_num][idx].unsqueeze(0)
+                                      for decode_num in range(len(new_cache_b))]
+                hyp_t['tmp_att'] = local_att_scores_b[idx].unsqueeze(0)
+                hat_att[hyp_t['seq']] = {}
+                hat_att[hyp_t['seq']]['cache'] = hyp_t['tmp_cache']
+                hat_att[hyp_t['seq']]['att_scores'] = hyp_t['tmp_att']
+
+    def get_ctchyps2compute(self, hyps, hyps_ctc, current_frame):
+        tmp2 = {}
+        for l, hyp in hyps.items():
+            l_id = hyp['yseq']
+            l_end = l_id[-1]
+            if "pos" not in hyp:
+                continue
+            if 0 in hyp['pos'] or l_end in hyp['pos']:
+                if l not in hyps_ctc and l_end != self.eos:
+                    tmp2[l] = {'yseq': l_id}
+                    tmp2[l]['seq'] = l
+                    tmp2[l]['rnnlm_prev'] = hyp['rnnlm_prev']
+                    tmp2[l]['rnnlm_score'] = hyp['rnnlm_score']
+                    if l_end != self.eos:
+                        tmp2[l]['last_time'] = [0] * len(l_id)
+                        tmp2[l]['last_time'][:] = hyp['last_time'][:]
+                        tmp2[l]['last_time'][-1] = current_frame
+        return tmp2
+
+    def compute_hyps_ctc(self, hyps_ctc_cluster, total_frame, enc_output, args, hat_att, enc_mask=None):
+        for length, hyps_t in hyps_ctc_cluster.items():
+            ys_mask = subsequent_mask(length - 1).unsqueeze(0).cuda()
+            ys_mask4use = ys_mask.repeat(len(hyps_t), 1, 1)
+            l_id = [hyp_t['yseq'][:-1] for hyp_t in hyps_t]
+            ys4use = torch.tensor(l_id).cuda()
+            enc_output4use = enc_output.repeat(len(hyps_t), 1, 1)
+            if "precache" not in hyps_t[0] or hyps_t[0]["precache"] is None:
+                cache4use = None
+            else:
+                cache4use = []
+                for decode_num in range(len(hyps_t[0]["precache"])):
+                    current_cache = []
+                    for hyp_t in hyps_t:
+                        # print(length, hyp_t["yseq"], hyp_t["cache"][0].shape,
+                        #       hyp_t["cache"][2].shape, hyp_t["cache"][4].shape)
+                        current_cache.append(hyp_t["precache"][decode_num].squeeze(0))
+                    current_cache = torch.stack(current_cache)
+                    cache4use.append(current_cache)
+            partial_mask4use = []
+            for hyp_t in hyps_t:
+                align = hyp_t['last_time']
+                align_tensor = torch.tensor(align).unsqueeze(0)
+                if args.chunk:
+                    partial_mask4use.append(enc_mask[0][align_tensor])
+                else:
+                    h_len = enc_output.shape[1]
+                    partial_mask = trigger_mask(1, total_frame, align_tensor, args.dec_left_window, args.dec_right_window)
+                    partial_mask4use.append(partial_mask)
+
+            partial_mask4use = torch.stack(partial_mask4use).cuda().squeeze(1)
+            local_att_scores_b, new_cache_b = \
+                self.decoder.forward_one_step(ys4use, ys_mask4use,
+                                              enc_output4use, partial_mask4use, cache4use)
+            for idx, hyp_t in enumerate(hyps_t):
+                hyp_t['tmp_cur_new_cache'] = [new_cache_b[decode_num][idx].unsqueeze(0)
+                                              for decode_num in range(len(new_cache_b))]
+                hyp_t['tmp_cur_att_scores'] = local_att_scores_b[idx].unsqueeze(0)
+                l_minus = ' '.join(hyp_t['seq'].split()[:-1])
+                hat_att[l_minus] = {}
+                hat_att[l_minus]['att_scores'] = hyp_t['tmp_cur_att_scores']
+                hat_att[l_minus]['cache'] = hyp_t['tmp_cur_new_cache']
+
 
 
     def calculate_all_attentions(self, xs_pad, ilens, ys_pad):
