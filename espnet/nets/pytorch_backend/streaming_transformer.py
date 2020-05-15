@@ -5,7 +5,6 @@
 from argparse import Namespace
 from collections import defaultdict, Counter
 from distutils.util import strtobool
-import pdb
 import time
 
 import logging
@@ -469,7 +468,11 @@ class E2E(torch.nn.Module):
         pad_len = self.eos - len(char_list) + 1
         for i in range(pad_len):
             char_list.append('<eos>')
-        seq_len = ((x.shape[0]-1)//2-1)//2
+        if isinstance(self.encoder.embed, EncoderConv2d):
+            seq_len = ((x.shape[0]+1)//2+1)//2
+        else:
+            seq_len = ((x.shape[0]-1)//2-1)//2
+
         if train_args.chunk:
             s = np.arange(0, seq_len, train_args.chunk_size)
             mask = adaptive_enc_mask(seq_len, s).unsqueeze(0)
@@ -491,17 +494,16 @@ class E2E(torch.nn.Module):
         # preprare sos
         y = self.sos
         vy = h.new_zeros(1).long()
+
         if recog_args.maxlenratio == 0:
             maxlen = h.shape[0]
         else:
             # maxlen >= 1
             maxlen = max(1, int(recog_args.maxlenratio * h.size(0)))
         minlen = int(recog_args.minlenratio * h.size(0))
-        logging.info('max output length: ' + str(maxlen))
-        logging.info('min output length: ' + str(minlen))
         hyp = {'score': 0.0, 'yseq': [y], 'rnnlm_prev': None, 'seq': char_list[y],
-               'last_time': [], "ctc_score": 0.0, "rnnlm_score": 0.0, "att_score": 0.0,
-               "cache": None, "precache": None, "preatt_score": 0.0, "prev_score": 0.0}
+               'last_time': [], "ctc_score": 0.0,  "rnnlm_score": 0.0, "att_score": 0.0,
+               "cache": None, "precache": None, "preatt_score": 0.0, "prev_score":0.0}
 
         hyps = {char_list[y]: hyp}
         hyps_att = {char_list[y]: hyp}
@@ -520,39 +522,40 @@ class E2E(torch.nn.Module):
         total_copy = time.time() - time.time()
         samelen = 0
         hat_att = {}
-        chunk_pos = set(np.array(mask.sum(dim=-1))[0])
-        for i in chunk_pos:
-            hat_att[i] = {}
+        if mask is not None:
+            chunk_pos = set(np.array(mask.sum(dim=-1))[0])
+            for i in chunk_pos:
+                hat_att[i] = {}
+        else:
+            hat_att[enc_output.shape[1]] = {}
 
         for i in range(h_len):
             hyps_ctc = {}
-            threshold = recog_args.threshold  # self.threshold #np.percentile(r, 98)
+            threshold = recog_args.threshold#self.threshold #np.percentile(r, 98)
             pos_ctc = np.where(lpz[i] > threshold)[0]
-            # self.removeIlegal(hyps)
-
-            chunk_index = mask[0][i].sum().item()
-            hyps_res = {}
-            if train_args.chunk:
-                for l, hyp in hyps.items():
-                    if l in hat_att[chunk_index]:
-                        hyp['tmp_cache'] = hat_att[chunk_index][l]['cache']
-                        hyp['tmp_att'] = hat_att[chunk_index][l]['att_scores']
-                    else:
-                        hyps_res[l] = hyp
+            #self.removeIlegal(hyps)
+            if mask is not None:
+                chunk_index = mask[0][i].sum().item()
             else:
-                hyps_res = hyps
-
-            tmp = self.clusterbyLength(hyps_res)  # This step clusters hyps according to length dict:{length,hyps}
+                chunk_index = h_len
+            hyps_res = {}
+            for l, hyp in hyps.items():
+                if l in hat_att[chunk_index]:
+                    hyp['tmp_cache'] = hat_att[chunk_index][l]['cache']
+                    hyp['tmp_att'] = hat_att[chunk_index][l]['att_scores']
+                else:
+                    hyps_res[l] = hyp
+            tmp = self.clusterbyLength(hyps_res) # This step clusters hyps according to length dict:{length,hyps}
             start = time.time()
 
             # pre-compute beam
-            self.compute_hyps(tmp, i, h_len, enc_output, train_args, hat_att[chunk_index], mask)
-            total_copy += time.time() - start
+            self.compute_hyps(tmp,i,h_len,enc_output, hat_att[chunk_index], mask)
+            total_copy += time.time()-start
             # Assign score and tokens to hyps
-            # print(hyps.keys())
+            #print(hyps.keys())
             for l, hyp in hyps.items():
                 if 'tmp_att' not in hyp:
-                    continue  # Todo check why
+                    continue #Todo check why
                 local_att_scores = hyp['tmp_att']
                 local_best_scores, local_best_ids = torch.topk(local_att_scores, 5, dim=1)
                 pos_att = np.array(local_best_ids[0].cpu())
@@ -560,20 +563,17 @@ class E2E(torch.nn.Module):
                 hyp['pos'] = pos
 
             # pre-compute ctc beam
-            hyps_ctc_compute = self.get_ctchyps2compute(hyps, hyps_ctc, i)
+            hyps_ctc_compute = self.get_ctchyps2compute(hyps,hyps_ctc,i)
             hyps_res2 = {}
-            if train_args.chunk:
-                for l, hyp in hyps_ctc_compute.items():
-                    l_minus = ' '.join(l.split()[:-1])
-                    if l_minus in hat_att[chunk_index]:
-                        hyp['tmp_cur_new_cache'] = hat_att[chunk_index][l_minus]['cache']
-                        hyp['tmp_cur_att_scores'] = hat_att[chunk_index][l_minus]['att_scores']
-                    else:
-                        hyps_res2[l] = hyp
-            else:
-                hyps_res2 = hyps_ctc_compute
+            for l, hyp in hyps_ctc_compute.items():
+                l_minus = ' '.join(l.split()[:-1])
+                if l_minus in hat_att[chunk_index]:
+                    hyp['tmp_cur_new_cache'] = hat_att[chunk_index][l_minus]['cache']
+                    hyp['tmp_cur_att_scores'] = hat_att[chunk_index][l_minus]['att_scores']
+                else:
+                    hyps_res2[l] = hyp
             tmp2_cluster = self.clusterbyLength(hyps_res2)
-            self.compute_hyps_ctc(tmp2_cluster, h_len, enc_output, train_args, hat_att[chunk_index], mask)
+            self.compute_hyps_ctc(tmp2_cluster,h_len,enc_output, hat_att[chunk_index], mask)
 
             for l, hyp in hyps.items():
                 start = time.time()
@@ -591,10 +591,8 @@ class E2E(torch.nn.Module):
 
                 start = time.time()
                 if 'tmp_att' not in hyp:
-                    continue  # Todo check why
+                    continue #Todo check why
                 local_att_scores = hyp['tmp_att']
-                new_cache = hyp['tmp_cache']
-                align = [0] * prefix_len
                 new_cache = hyp['tmp_cache']
                 align = [0] * prefix_len
                 align[:prefix_len - 1] = hyp['last_time'][:]
@@ -609,8 +607,11 @@ class E2E(torch.nn.Module):
                             hyps_ctc[l]['last_time'] = [0] * prefix_len
                             hyps_ctc[l]['last_time'][:] = hyp['last_time'][:]
                             hyps_ctc[l]['last_time'][-1] = i
-                            cur_att_scores = hyps_ctc_compute[l]["tmp_cur_att_scores"]
-                            cur_new_cache = hyps_ctc_compute[l]["tmp_cur_new_cache"]
+                            try:
+                                cur_att_scores = hyps_ctc_compute[l]["tmp_cur_att_scores"]
+                                cur_new_cache = hyps_ctc_compute[l]["tmp_cur_new_cache"]
+                            except:
+                                pdb.set_trace()
                             hyps_ctc[l]['att_score'] = hyp['preatt_score'] + \
                                                        float(cur_att_scores[0, l_end].data)
                             hyps_ctc[l]['cur_att'] = float(cur_att_scores[0, l_end].data)
@@ -628,11 +629,12 @@ class E2E(torch.nn.Module):
                         hyps_ctc[l]['precache'] = hyp['precache']
                         hyps_ctc[l]['seq'] = hyp['seq']
 
+
                 for c in list(pos):
                     if c == 0:
                         Pb[l] += lpz[i][0] * (Pb_prev[l] + Pnb_prev[l])
                     else:
-                        l_plus = l + " " + char_list[c]
+                        l_plus = l+ " " +char_list[c]
                         if l_plus not in hyps_ctc:
                             hyps_ctc[l_plus] = {}
                             if "end" in hyp:
@@ -641,8 +643,7 @@ class E2E(torch.nn.Module):
                             hyps_ctc[l_plus]['yseq'][:len(hyp['yseq'])] = l_id
                             hyps_ctc[l_plus]['yseq'][-1] = int(c)
                             hyps_ctc[l_plus]['rnnlm_prev'] = rnnlm_state
-                            hyps_ctc[l_plus]['rnnlm_score'] = hyp['rnnlm_score'] + float(
-                                local_lm_scores[0, c].data)
+                            hyps_ctc[l_plus]['rnnlm_score'] = hyp['rnnlm_score'] + float(local_lm_scores[0, c].data)
                             hyps_ctc[l_plus]['att_score'] = hyp['att_score'] \
                                                             + float(local_att_scores[0, c].data)
                             hyps_ctc[l_plus]['cur_att'] = float(local_att_scores[0, c].data)
@@ -659,58 +660,70 @@ class E2E(torch.nn.Module):
                         else:
                             Pnb[l_plus] += r[c]
 
+
                         if l_plus not in hyps:
                             Pb[l_plus] += lpz[i][0] * (Pb_prev[l_plus] + Pnb_prev[l_plus])
                             Pb[l_plus] += lpz[i][c] * Pnb_prev[l_plus]
-            # total_copy += time.time() - start
+            #total_copy += time.time() - start
             for l in hyps_ctc.keys():
                 if Pb[l] != 0 or Pnb[l] != 0:
                     hyps_ctc[l]['ctc_score'] = np.log(Pb[l] + Pnb[l])
                 else:
                     hyps_ctc[l]['ctc_score'] = float('-inf')
-                # local_score = hyps_ctc[l]['ctc_score'] + recog_args.ctc_lm_weight * hyps_ctc[l][
-                #     'rnnlm_score'] + \
-                #               recog_args.penalty * (len(hyps_ctc[l]['yseq']))
-                # hyps_ctc[l]['local_score'] = local_score
-
-                # hyps_ctc[l]['score'] = (1 - recog_args.ctc_weight) * hyps_ctc[l]['att_score'] \
-                #                        + recog_args.ctc_weight * hyps_ctc[l]['ctc_score'] + \
-                #                        recog_args.penalty * (len(hyps_ctc[l]['yseq'])) + \
-                #                        recog_args.lm_weight * hyps_ctc[l]['rnnlm_score']
-                local_score =  hyps_ctc[l]['ctc_score']\
-                              + recog_args.penalty * len(hyps_ctc[l]['yseq'])
-                hyps_ctc[l]['local_score'] = local_score + recog_args.ctc_weight * hyps_ctc[l]['ctc_score'] + hyps_ctc[l]['prev_score']
-
+                local_score = hyps_ctc[l]['ctc_score'] + recog_args.ctc_lm_weight * hyps_ctc[l]['rnnlm_score'] + \
+                             recog_args.penalty * (len(hyps_ctc[l]['yseq']))
+                hyps_ctc[l]['local_score'] = local_score
                 hyps_ctc[l]['score'] = (1-recog_args.ctc_weight) * hyps_ctc[l]['att_score'] \
-                                      + recog_args.ctc_weight * hyps_ctc[l]['ctc_score'] +  recog_args.penalty * len(hyps_ctc[l]['yseq'])
-
+                                       + recog_args.ctc_weight * hyps_ctc[l]['ctc_score'] + \
+                                       recog_args.penalty * (len(hyps_ctc[l]['yseq'])) + \
+                                       recog_args.lm_weight * hyps_ctc[l]['rnnlm_score']
             Pb_prev = Pb
             Pnb_prev = Pnb
             Pb = Counter()
             Pnb = Counter()
-            hyps1 = sorted(hyps_ctc.items(),
-                           key=lambda x: x[1]['local_score'],reverse=True)[:min(2*beam,len(hyps_ctc))]
-            hyps = sorted(hyps1, key=lambda x: x[1]['score'], reverse=True)[:beam]
+            hyps1 = sorted(hyps_ctc.items(), key=lambda x: x[1]['local_score'], reverse=True)[:beam]
+            hyps1 = dict(hyps1)
+            hyps2 = sorted(hyps_ctc.items(), key=lambda x: x[1]['att_score'], reverse=True)[:beam]
+            hyps2 = dict(hyps2)
+            hyps = sorted(hyps_ctc.items(), key=lambda x: x[1]['score'], reverse=True)[:beam]
             hyps = dict(hyps)
-
-        hyps = sorted(hyps.items(), key=lambda x: x[1]['score'], reverse=True)[:beam]
+            for key in hyps1.keys():
+                if key not in hyps:
+                    hyps[key] = hyps1[key]
+            for key in hyps2.keys():
+                if key not in hyps:
+                    hyps[key] = hyps2[key]
+        hyps = sorted(hyps.items() , key=lambda x: x[1]['score'], reverse=True)[:beam]
         hyps = dict(hyps)
         logging.info('input lengths: ' + str(h.size(0)))
         logging.info('max output length: ' + str(maxlen))
         logging.info('min output length: ' + str(minlen))
         if "<eos>" in hyps.keys():
             del hyps["<eos>"]
-
+        #for key in hyps.keys():
+        #    logging.info("{0}\tctc:{1}\tatt:{2}\trnnlm:{3}\tscore:{4}".format(key,hyps[key]["ctc_score"],hyps[key]['att_score'],
+        #                                        hyps[key]['rnnlm_score'], hyps[key]['score']))
+        #     print("!!!","Decoding None")
         best = list(hyps.keys())[0]
         ids = hyps[best]['yseq']
         score = hyps[best]['score']
-        # if l in hyps.keys():
+        logging.info('score: ' + str(score))
+        #if l in hyps.keys():
         #    logging.info(l)
 
-        # print(samelen,h_len)
+        #print(samelen,h_len)
         return best, ids, score
 
-    def clusterbyLength(self, hyps):
+    def removeIlegal(self,hyps):
+        max_y = max([len(hyp['yseq']) for l, hyp in hyps.items()])
+        for_remove = []
+        for l, hyp in hyps.items():
+            if max_y - len(hyp['yseq']) > 4:
+                for_remove.append(l)
+        for cur_str in for_remove:
+            del hyps[cur_str]
+
+    def clusterbyLength(self,hyps):
         tmp = {}
         for l, hyp in hyps.items():
             prefix_len = len(hyp['yseq'])
@@ -722,7 +735,8 @@ class E2E(torch.nn.Module):
                 tmp[prefix_len].append(hyp)
         return tmp
 
-    def compute_hyps(self, current_hyps, curren_frame, total_frame, enc_output, args, hat_att, enc_mask=None):
+
+    def compute_hyps(self, current_hyps, curren_frame,total_frame,enc_output, hat_att, enc_mask=None):
         for length, hyps_t in current_hyps.items():
             ys_mask = subsequent_mask(length).unsqueeze(0).cuda()
             ys_mask4use = ys_mask.repeat(len(hyps_t), 1, 1)
@@ -746,15 +760,19 @@ class E2E(torch.nn.Module):
 
             partial_mask4use = []
             for hyp_t in hyps_t:
+                #partial_mask4use.append(torch.ones([1, len(hyp_t['last_time'])+1, enc_mask.shape[1]]).byte())
                 align = [0] * length
                 align[:length - 1] = hyp_t['last_time'][:]
                 align[-1] = curren_frame
                 align_tensor = torch.tensor(align).unsqueeze(0)
-                if args.chunk:
-                    partial_mask4use.append(enc_mask[0][align_tensor])
+                if enc_mask is not None:
+                    partial_mask = enc_mask[0][align_tensor]
                 else:
-                    h_len = enc_output.shape[1]
-                    partial_mask4use.append(trigger_mask(1, h_len, align_tensor, args.dec_left_window, args.dec_right_window))
+                    right_window = self.right_window
+                    partial_mask = trigger_mask(1, total_frame, align_tensor,
+                                            self.left_window, right_window)
+                partial_mask4use.append(partial_mask)
+
             partial_mask4use = torch.stack(partial_mask4use).cuda().squeeze(1)
             local_att_scores_b, new_cache_b = self.decoder.forward_one_step(ys4use, ys_mask4use,
                                                                             enc_output4use, partial_mask4use, cache4use)
@@ -766,7 +784,7 @@ class E2E(torch.nn.Module):
                 hat_att[hyp_t['seq']]['cache'] = hyp_t['tmp_cache']
                 hat_att[hyp_t['seq']]['att_scores'] = hyp_t['tmp_att']
 
-    def get_ctchyps2compute(self, hyps, hyps_ctc, current_frame):
+    def get_ctchyps2compute(self,hyps,hyps_ctc,current_frame):
         tmp2 = {}
         for l, hyp in hyps.items():
             l_id = hyp['yseq']
@@ -774,6 +792,11 @@ class E2E(torch.nn.Module):
             if "pos" not in hyp:
                 continue
             if 0 in hyp['pos'] or l_end in hyp['pos']:
+                #l_minus = ' '.join(l.split()[:-1])
+                #if l_minus in hat_att:
+                #    hyps[l]['tmp_cur_new_cache'] = hat_att[l_minus]['cache']
+                #    hyps[l]['tmp_cur_att_scores'] = hat_att[l_minus]['att_scores']
+                #    continue
                 if l not in hyps_ctc and l_end != self.eos:
                     tmp2[l] = {'yseq': l_id}
                     tmp2[l]['seq'] = l
@@ -785,7 +808,7 @@ class E2E(torch.nn.Module):
                         tmp2[l]['last_time'][-1] = current_frame
         return tmp2
 
-    def compute_hyps_ctc(self, hyps_ctc_cluster, total_frame, enc_output, args, hat_att, enc_mask=None):
+    def compute_hyps_ctc(self,hyps_ctc_cluster,total_frame,enc_output, hat_att, enc_mask=None):
         for length, hyps_t in hyps_ctc_cluster.items():
             ys_mask = subsequent_mask(length - 1).unsqueeze(0).cuda()
             ys_mask4use = ys_mask.repeat(len(hyps_t), 1, 1)
@@ -806,16 +829,18 @@ class E2E(torch.nn.Module):
                     cache4use.append(current_cache)
             partial_mask4use = []
             for hyp_t in hyps_t:
+                #partial_mask4use.append(torch.ones([1, len(hyp_t['last_time']), enc_mask.shape[1]]).byte())
                 align = hyp_t['last_time']
                 align_tensor = torch.tensor(align).unsqueeze(0)
-                if args.chunk:
-                    partial_mask4use.append(enc_mask[0][align_tensor])
+                if enc_mask is not None:
+                    partial_mask = enc_mask[0][align_tensor]
                 else:
-                    h_len = enc_output.shape[1]
-                    partial_mask = trigger_mask(1, total_frame, align_tensor, args.dec_left_window, args.dec_right_window)
-                    partial_mask4use.append(partial_mask)
+                    right_window = self.right_window
+                    partial_mask = trigger_mask(1, total_frame, align_tensor, self.left_window, right_window)
+                partial_mask4use.append(partial_mask)
 
             partial_mask4use = torch.stack(partial_mask4use).cuda().squeeze(1)
+
             local_att_scores_b, new_cache_b = \
                 self.decoder.forward_one_step(ys4use, ys_mask4use,
                                               enc_output4use, partial_mask4use, cache4use)
@@ -828,23 +853,3 @@ class E2E(torch.nn.Module):
                 hat_att[l_minus]['att_scores'] = hyp_t['tmp_cur_att_scores']
                 hat_att[l_minus]['cache'] = hyp_t['tmp_cur_new_cache']
 
-
-
-    def calculate_all_attentions(self, xs_pad, ilens, ys_pad):
-        """E2E attention calculation.
-
-        :param torch.Tensor xs_pad: batch of padded input sequences (B, Tmax, idim)
-        :param torch.Tensor ilens: batch of lengths of input sequences (B)
-        :param torch.Tensor ys_pad: batch of padded token id sequence tensor (B, Lmax)
-        :return: attention weights with the following shape,
-            1) multi-head case => attention weights (B, H, Lmax, Tmax),
-            2) other case => attention weights (B, Lmax, Tmax).
-        :rtype: float ndarray
-        """
-        with torch.no_grad():
-            self.forward(xs_pad, ilens, ys_pad)
-        ret = dict()
-        for name, m in self.named_modules():
-            if isinstance(m, MultiHeadedAttention):
-                ret[name] = m.attn.cpu().numpy()
-        return ret

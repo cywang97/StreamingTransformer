@@ -9,7 +9,6 @@
 import json
 import logging
 import os
-import pdb
 
 import numpy as np
 import torch
@@ -94,7 +93,6 @@ def recog(args):
             batch = [(name, js[name])]
             feat = load_inputs_and_targets(batch)
             feat = feat[0][0]
-            pdb.set_trace()
             if args.prefix_decode:
                 best, ids, score = model.prefix_recognize(feat, args, train_args, train_args.char_list, rnnlm)
                 new_js[name] = add_single_results(js[name], best, ids, score)
@@ -121,7 +119,11 @@ def viterbi_decode(args):
     model_class = dynamic_import(train_args.model_module)
     model = model_class(idim, odim, train_args)
     if args.model is not None:
-        load_params = dict(torch.load(args.model)['state_dict'])
+        load_params = dict(torch.load(args.model))
+        if 'model' in load_params:
+            load_params = dict(load_params['model'])
+        if 'state_dict' in load_params:
+            load_params = dict(load_params['state_dict'])
         model_params = dict(model.named_parameters())
         for k, v in load_params.items():
             k = k.replace('module.', '')

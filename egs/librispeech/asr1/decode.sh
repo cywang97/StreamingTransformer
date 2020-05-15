@@ -4,8 +4,8 @@ config=conf/decode.yaml
 ngpu=$1
 jobperGPU=$2
 ((nblock=$ngpu*$jobperGPU))
-startblock=0
-endblock=${nblock}
+startblock=1
+endblock=${nblock}+1
 model_dir=exp/streaming_transformer
 rnnlm=exp/irielm.ep11.last5.avg/rnnlm.model.best
 
@@ -21,11 +21,12 @@ cgpu=$[$2+0]
 recog_set=$3
 echo $cgpu
 export CUDA_VISIBLE_DEVICES=$cgpu
-python ../../../espnet/bin/asr_recog.py \
+${decode_cmd} ${model_dir}/decode/${recog_set}/log/decode.${part}.log \
+    asr_recog.py \
     --config ${config} \
     --ngpu 1 \
     --rnnlm ${rnnlm} \
-    --recog-json dump/${recog_set}/data_aligned_${part}.json \
+    --recog-json dump/${recog_set}/deltafalse/split${nblock}utt/data_unigram5000.${part}.json \
     --model ${model_dir}/results/model.last5.avg.best \
     --result-label ${model_dir}/decode/${recog_set}/data.${part}.json
 }
@@ -33,11 +34,8 @@ python ../../../espnet/bin/asr_recog.py \
 function recog(){
 recog_set=$1
 decode_dir=${model_dir}/decode/${recog_set}
-mkdir -p ${decode_dir}/data
-python  split_data.py \
-    --parts ${nblock} \
-    --json dump/${recog_set}/data_unigram5000.json \
-    --datadir ${decode_dir}/data
+
+splitjson.py --parts ${nblock} dump/${recog_set}/deltafalse/data_unigram5000.json 
 
 for ((i=$startblock;i<$endblock;i+=${ngpu}));
 do
@@ -50,11 +48,8 @@ do
     then
     wait;
     fi
-
-    echo "decode $[$i+$ngpu]/${nblock} done"
 done
-#wait
-echo "decode all done!"
+wait
 
 python merge_data.py \
     --parts ${nblock} \

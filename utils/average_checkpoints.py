@@ -42,45 +42,27 @@ def main():
     print("average over", last)
     avg = None
 
-    if args.backend == "pytorch":
-        import torch
+    import torch
 
-        # sum
-        for path in last:
-            states = torch.load(path, map_location=torch.device("cpu"))["state_dict"]
-            if avg is None:
-                avg = states
-            else:
-                for k in avg.keys():
-                    avg[k] += states[k]
+    # sum
+    for path in last:
+        states = torch.load(path, map_location=torch.device("cpu"))
+        if 'state_dict' in states:
+            states = states['state_dict']
+        if 'model' in states:
+            states = states['model']
+        if avg is None:
+            avg = states
+        else:
+            for k in avg.keys():
+                avg[k] += states[k]
 
-        # average
-        for k in avg.keys():
-            if avg[k] is not None:
-                avg[k] /= args.num
+    # average
+    for k in avg.keys():
+        if avg[k] is not None:
+            avg[k] /= args.num
 
-        torch.save(avg, args.out)
-
-    elif args.backend == "chainer":
-        # sum
-        for path in last:
-            states = np.load(path)
-            if avg is None:
-                keys = [x.split("main/")[1] for x in states if "model" in x]
-                avg = dict()
-                for k in keys:
-                    avg[k] = states["updater/model:main/{}".format(k)]
-            else:
-                for k in keys:
-                    avg[k] += states["updater/model:main/{}".format(k)]
-        # average
-        for k in keys:
-            if avg[k] is not None:
-                avg[k] /= args.num
-        np.savez_compressed(args.out, **avg)
-        os.rename("{}.npz".format(args.out), args.out)  # numpy save with .npz extension
-    else:
-        raise ValueError("Incorrect type of backend")
+    torch.save(avg, args.out)
 
 
 def get_parser():
