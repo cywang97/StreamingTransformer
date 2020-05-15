@@ -31,7 +31,7 @@ CUDA_DEPS := cupy.done
 
 all: kaldi.done python 
 
-python: venv $(CUDA_DEPS) warp-ctc.done warp-transducer.done chainer_ctc.done
+python: venv $(CUDA_DEPS) warp-ctc.done
 
 extra: nkf.done moses.done mwerSegmenter.done pesq
 
