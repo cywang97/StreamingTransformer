@@ -15,8 +15,8 @@ Our installation follow the installation process of ESPnet
 ### Step 2. installation including Kaldi
     cd tools
     make -j 10
-### Training
-
+    
+## Build a streaming Transformer model
 ### Step 1. Data Prepare
     cd egs/librispeech/asr1
     ./run.sh 
