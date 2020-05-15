@@ -37,7 +37,7 @@ Here, we train a chunk-based streaming Transformer which is initialized with an 
 If you want to train a look-ahead based streaming Transformer, set `chunk` to False and change the `left-window, right-window, dec-left-window, dec-right-window` arguments. The training log is written in `exp/streaming_transformer/train.log`. You can monitor the output through `tail -f exp/streaming_transformer/train.log`
 
 ### Step 4. Decoding
-Execute the followint script with to decoding on test_clean and test_other sets
+Execute the following script with to decoding on test_clean and test_other sets
 
 	./decode.sh num_of_gpu job_per_gpu
 
