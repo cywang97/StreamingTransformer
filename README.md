@@ -45,6 +45,6 @@ Execute the following script with to decoding on test_clean and test_other sets
 ## Results on Librispeech
 | Model        | test-clean   |  test-other  |
 | --------   | -----:  | :----:  |
-| streaming_transformer-chunk32      | 2.8   |       |
+| streaming_transformer-chunk32      | 2.8   |   7.6    |
 
 
