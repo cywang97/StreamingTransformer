@@ -12,11 +12,9 @@ Our installation follow the installation process of ESPnet
     export CFLAGS="-I$CUDAROOT/include $CFLAGS"
     export CUDA_HOME=$CUDAROOT
     export CUDA_PATH=$CUDAROOT`
-
 ###Step 2. installation including Kaldi
-    cd tools
+	cd tools
 	make -j 10
-
 ###Training
 
 ###Step 1. Data Prepare
