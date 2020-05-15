@@ -50,12 +50,8 @@ do
     fi
 done
 wait
-
-python merge_data.py \
-    --parts ${nblock} \
-    --result-dir ${decode_dir} \
-    --result-label ${decode_dir}/data.json
-echo "merge result json done!"
+score_sclite.sh --bpe 5000 --bpemodel data/lang_char/train_unigram5000.model --wer true \
+    ${model_dir}/decode/${recog_set} data/lang_char/train_unigram5000_units.txt
 }
 
 for recog_set in ${dataset}; do
