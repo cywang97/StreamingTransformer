@@ -24,10 +24,9 @@ transformer-lr: 1.0
 transformer-warmup-steps: 2500
 n-iter-processes: 0
 
-enc-init: /teamscratch/tts_intern_experiment/v-chengw/data/librispeech/model/exp/train_960_pytorch_train_pytorch_transformer.v1_aheads8_batch-bins15000000_specaug/results/model.val5.avg.best
+enc-init: /path/to/model
 enc-init-mods: encoder,ctc,decoder
-dec-left-window: 1000
-dec-right-window: 6
-right-window: 16
-left-window: 16
+
+streaming: true
+chunk: true
 chunk-size: 16

@@ -47,7 +47,7 @@ def main():
 
         # sum
         for path in last:
-            states = torch.load(path, map_location=torch.device("cpu"))["model"]
+            states = torch.load(path, map_location=torch.device("cpu"))["state_dict"]
             if avg is None:
                 avg = states
             else:

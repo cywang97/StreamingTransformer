@@ -6,13 +6,8 @@ PYTHON :=
 PYTHON_VERSION := 3.7.3
 CUPY_VERSION := 6.0.0
 CUDA_VERSION := 10.0
-# PyTorch version: 0.4.1, 1.0.0, 1.0.1, 1.1.0, 1.2.0, 1.3.0, 1.3.1, 1.4.0
+# PyTorch version: 0.4.1 or 1.0.0 or 1.0.1
 TH_VERSION := 1.0.1
-ifeq ($(shell expr $(strip $(subst .,,$(TH_VERSION))) \< 120), 1)
-INSTALL_WARPCTC := 1
-else
-INSTALL_WARPCTC :=
-endif
 # Use a prebuild Kaldi to omit the installation
 KALDI :=
 WGET := wget --tries=3
@@ -23,18 +18,18 @@ CONDA_URL := https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.
 GCC_VERSION := $(shell gcc -dumpversion)
 
 
-ifneq ($(shell which nvidia-smi),) # 'nvcc' found
+#ifneq ($(shell which nvidia-smi),) # 'nvcc' found
 CONDA_PYTORCH := pytorch=$(TH_VERSION) cudatoolkit=$(CUDA_VERSION)
 CUDA_DEPS := cupy.done
-else
-CONDA_PYTORCH := pytorch-cpu=$(TH_VERSION)
-CUDA_DEPS :=
-endif
+#else
+#CONDA_PYTORCH := pytorch-cpu=$(TH_VERSION)
+#CUDA_DEPS :=
+#endif
 
 
 .PHONY: all clean
 
-all: kaldi.done python check_install
+all: kaldi.done python 
 
 python: venv $(CUDA_DEPS) warp-ctc.done warp-transducer.done chainer_ctc.done
 
@@ -42,7 +37,6 @@ extra: nkf.done moses.done mwerSegmenter.done pesq
 
 ifneq ($(strip $(KALDI)),)
 kaldi.done:
-	test -d $(KALDI)
 	ln -s $(abspath $(KALDI)) kaldi
 	touch kaldi.done
 else
@@ -67,8 +61,6 @@ miniconda.sh:
 	test -f miniconda.sh || $(WGET) $(CONDA_URL) -O miniconda.sh
 venv: miniconda.sh
 	test -d $(PWD)/venv || bash miniconda.sh -b -p $(PWD)/venv
-	. venv/bin/activate && conda install -y setuptools -c anaconda
-	. venv/bin/activate && conda install -y pip -c anaconda
 	. venv/bin/activate && conda update -y conda
 	. venv/bin/activate && conda install -y python=$(PYTHON_VERSION)
 	. venv/bin/activate && conda info -a
@@ -85,7 +77,6 @@ ifneq ($(strip $(CUPY_VERSION)),)
 endif
 
 warp-ctc.done: espnet.done
-ifneq ($(strip $(INSTALL_WARPCTC)),)
 	if . venv/bin/activate && python -c 'import torch as t;major=t.__version__.split(".")[0];assert major == "1"' &> /dev/null; then \
 		if [ ! -z "$(strip $(CUPY_VERSION))" ]; then \
 			. venv/bin/activate && pip install warpctc-pytorch10-cuda$(strip $(subst .,,$(CUDA_VERSION))); \
@@ -100,7 +91,6 @@ ifneq ($(strip $(INSTALL_WARPCTC)),)
 		. ../venv/bin/activate; pip install cffi; cd pytorch_binding && python setup.py install; \
 	fi
 	touch warp-ctc.done
-endif
 
 warp-transducer.done: espnet.done
 	rm -rf warp-transducer
@@ -159,9 +149,9 @@ mwerSegmenter.done:
 
 check_install: kaldi.done python
 ifneq ($(strip $(CUPY_VERSION)),)
-	. venv/bin/activate; python check_install.py --torch-version $(TH_VERSION)
+	. venv/bin/activate; python check_install.py
 else
-	. venv/bin/activate; python check_install.py --no-cupy --torch-version $(TH_VERSION)
+	. venv/bin/activate; python check_install.py --no-cupy
 endif
 
 
