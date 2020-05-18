@@ -1,5 +1,20 @@
 # Streaming Transformer
-**This repo contains the streaming Transformer of our work xxx. The work is based on ESPnet0.6.0. The streaming Transformer includes a streaming encoder, either chunk-based or look-ahead based, and a trigger-attention based decoder.**
+**This repo contains the streaming Transformer of our work ``On the Comparison of Popular End-to-End Models for Large Scale Speech Recognition``, which is based on ESPnet0.6.0. The streaming Transformer includes a streaming encoder, either chunk-based or look-ahead based, and a trigger-attention based decoder.**
+
+We will release four models and show reproducible results on Librispeech
+
+* Streaming_transformer-chunk32 with ESPnet Conv2d Encoder at xxx.
+
+*  Streaming_transformer-chunk32 with VGG Encoder (Todo).
+
+*  Streaming_transformer-lookahead with ESPnet Conv2d Encoder (Todo).
+
+*  Streaming_transformer-lookahead with VGG Encoder (Todo).
+
+## Results on Librispeech
+| Model        | test-clean   |  test-other  |latency  |size  |
+| --------   | -----:  | :----:  |:----:  |:----:  |
+| streaming_transformer-chunk32      | 2.8   |   7.6    | 640ms  | ??M |
 
 
 ## Installation
@@ -41,10 +56,6 @@ Execute the following script with to decoding on test_clean and test_other sets
 
 	./decode.sh num_of_gpu job_per_gpu
 
-
-## Results on Librispeech
-| Model        | test-clean   |  test-other  |
-| --------   | -----:  | :----:  |
-| streaming_transformer-chunk32      | 2.8   |   7.6    |
-
+### Offline Transformer Reference
+Regarding the offline Transformer model, Please visit [here](https://github.com/MarkWuNLP/SemanticMask)
 
