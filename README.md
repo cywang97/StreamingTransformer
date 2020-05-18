@@ -5,7 +5,7 @@ We will release four models and show reproducible results on Librispeech
 
 * Streaming_transformer-chunk32 with ESPnet Conv2d Encoder at xxx.
 
-*  Streaming_transformer-chunk32 with VGG Encoder (Todo).
+*  Streaming_transformer-chunk32 with VGG Encoder.
 
 *  Streaming_transformer-lookahead with ESPnet Conv2d Encoder (Todo).
 
@@ -14,7 +14,8 @@ We will release four models and show reproducible results on Librispeech
 ## Results on Librispeech
 | Model        | test-clean   |  test-other  |latency  |size  |
 | --------   | -----:  | :----:  |:----:  |:----:  |
-| streaming_transformer-chunk32      | 2.8   |   7.6    | 640ms  | ??M |
+| streaming_transformer-chunk32-conv2d     | 2.8   |   7.6    | 640ms  | ??M |
+| streaming_transformer-chunk32-vgg	| 2.9 | 7.0 | 640ms | ??M |
 
 
 ## Installation
