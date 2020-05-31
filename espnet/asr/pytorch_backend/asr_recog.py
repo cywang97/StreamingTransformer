@@ -39,8 +39,21 @@ def recog(args):
 
     """
     set_deterministic_pytorch(args)
-    model, train_args = load_trained_model(args.model)
-    model.recog_args = args
+    idim, odim, train_args = get_model_conf(
+        args.model, os.path.join(os.path.dirname(args.model), 'model.json'))
+    model_class = dynamic_import(train_args.model_module)
+    model = model_class(idim, odim, train_args)
+    if args.model is not None:
+        load_params = dict(torch.load(args.model))
+        model_params = dict(model.named_parameters())
+        for k, v in load_params.items():
+            k = k.replace('module.', '')
+            if k in model_params and v.size() == model_params[k].size():
+                model_params[k].data = v.data
+                logging.warning('load parameters {}'.format(k))
+
+    #model, train_args = load_trained_model(args.model)
+    #model.recog_args = args
 
 
     # read rnnlm

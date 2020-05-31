@@ -16,7 +16,7 @@ import torch
 from espnet.nets.pytorch_backend.ctc import CTC
 from espnet.nets.pytorch_backend.nets_utils import make_non_pad_mask
 from espnet.nets.pytorch_backend.nets_utils import th_accuracy
-from espnet.nets.pytorch_backend.nets_utils import adaptive_enc_mask, turncated_mask
+from espnet.nets.pytorch_backend.nets_utils import adaptive_enc_mask, turncated_mask, trigger_mask
 from espnet.nets.pytorch_backend.transformer.add_sos_eos import add_sos_eos
 from espnet.nets.pytorch_backend.transformer.attention import MultiHeadedAttention
 from espnet.nets.pytorch_backend.transformer.decoder import Decoder
@@ -549,7 +549,7 @@ class E2E(torch.nn.Module):
             start = time.time()
 
             # pre-compute beam
-            self.compute_hyps(tmp,i,h_len,enc_output, hat_att[chunk_index], mask)
+            self.compute_hyps(tmp,i,h_len,enc_output, hat_att[chunk_index], mask, train_args.chunk)
             total_copy += time.time()-start
             # Assign score and tokens to hyps
             #print(hyps.keys())
@@ -573,7 +573,7 @@ class E2E(torch.nn.Module):
                 else:
                     hyps_res2[l] = hyp
             tmp2_cluster = self.clusterbyLength(hyps_res2)
-            self.compute_hyps_ctc(tmp2_cluster,h_len,enc_output, hat_att[chunk_index], mask)
+            self.compute_hyps_ctc(tmp2_cluster,h_len,enc_output, hat_att[chunk_index], mask, train_args.chunk)
 
             for l, hyp in hyps.items():
                 start = time.time()
@@ -607,11 +607,8 @@ class E2E(torch.nn.Module):
                             hyps_ctc[l]['last_time'] = [0] * prefix_len
                             hyps_ctc[l]['last_time'][:] = hyp['last_time'][:]
                             hyps_ctc[l]['last_time'][-1] = i
-                            try:
-                                cur_att_scores = hyps_ctc_compute[l]["tmp_cur_att_scores"]
-                                cur_new_cache = hyps_ctc_compute[l]["tmp_cur_new_cache"]
-                            except:
-                                pdb.set_trace()
+                            cur_att_scores = hyps_ctc_compute[l]["tmp_cur_att_scores"]
+                            cur_new_cache = hyps_ctc_compute[l]["tmp_cur_new_cache"]
                             hyps_ctc[l]['att_score'] = hyp['preatt_score'] + \
                                                        float(cur_att_scores[0, l_end].data)
                             hyps_ctc[l]['cur_att'] = float(cur_att_scores[0, l_end].data)
@@ -736,7 +733,7 @@ class E2E(torch.nn.Module):
         return tmp
 
 
-    def compute_hyps(self, current_hyps, curren_frame,total_frame,enc_output, hat_att, enc_mask=None):
+    def compute_hyps(self, current_hyps, curren_frame,total_frame,enc_output, hat_att, enc_mask, chunk=True):
         for length, hyps_t in current_hyps.items():
             ys_mask = subsequent_mask(length).unsqueeze(0).cuda()
             ys_mask4use = ys_mask.repeat(len(hyps_t), 1, 1)
@@ -765,7 +762,7 @@ class E2E(torch.nn.Module):
                 align[:length - 1] = hyp_t['last_time'][:]
                 align[-1] = curren_frame
                 align_tensor = torch.tensor(align).unsqueeze(0)
-                if enc_mask is not None:
+                if chunk:
                     partial_mask = enc_mask[0][align_tensor]
                 else:
                     right_window = self.right_window
@@ -808,7 +805,7 @@ class E2E(torch.nn.Module):
                         tmp2[l]['last_time'][-1] = current_frame
         return tmp2
 
-    def compute_hyps_ctc(self,hyps_ctc_cluster,total_frame,enc_output, hat_att, enc_mask=None):
+    def compute_hyps_ctc(self,hyps_ctc_cluster,total_frame,enc_output, hat_att, enc_mask, chunk=True):
         for length, hyps_t in hyps_ctc_cluster.items():
             ys_mask = subsequent_mask(length - 1).unsqueeze(0).cuda()
             ys_mask4use = ys_mask.repeat(len(hyps_t), 1, 1)
@@ -832,7 +829,7 @@ class E2E(torch.nn.Module):
                 #partial_mask4use.append(torch.ones([1, len(hyp_t['last_time']), enc_mask.shape[1]]).byte())
                 align = hyp_t['last_time']
                 align_tensor = torch.tensor(align).unsqueeze(0)
-                if enc_mask is not None:
+                if chunk:
                     partial_mask = enc_mask[0][align_tensor]
                 else:
                     right_window = self.right_window
