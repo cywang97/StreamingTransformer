@@ -7,7 +7,7 @@ We will release following models and show reproducible results on Librispeech
 
 *  Streaming_transformer-chunk32 with VGG Encoder.
 
-*  Streaming_transformer-lookahead with ESPnet Conv2d Encoder.
+*  Streaming_transformer-lookahead with ESPnet Conv2d Encoder. (https://drive.google.com/open?id=1oOWQo1sK0Xc49zXVlnq5fIdaDoxY7l_r)
 
 *  Streaming_transformer-lookahead with VGG Encoder.
 
@@ -16,6 +16,7 @@ We will release following models and show reproducible results on Librispeech
 | --------   | -----:  | :----:  |:----:  |:----:  |
 | streaming_transformer-chunk32-conv2d     | 2.8   |   7.6    | 640ms  | 78M |
 | streaming_transformer-chunk32-vgg	| 2.9 | 7.0 | 640ms | 78M |
+| streaming_transformer-lookahead2-conv2d | 3.1  | 9.1 | 1230ms | 78M |
 
 
 
