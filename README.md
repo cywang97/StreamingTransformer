@@ -1,21 +1,23 @@
 # Streaming Transformer
 **This repo contains the streaming Transformer of our work ``On the Comparison of Popular End-to-End Models for Large Scale Speech Recognition``, which is based on ESPnet0.6.0. The streaming Transformer includes a streaming encoder, either chunk-based or look-ahead based, and a trigger-attention based decoder.**
 
-We will release four models and show reproducible results on Librispeech
+We will release following models and show reproducible results on Librispeech
 
 * Streaming_transformer-chunk32 with ESPnet Conv2d Encoder at xxx.
 
 *  Streaming_transformer-chunk32 with VGG Encoder.
 
-*  Streaming_transformer-lookahead with ESPnet Conv2d Encoder (Todo).
+*  Streaming_transformer-lookahead with ESPnet Conv2d Encoder.
 
-*  Streaming_transformer-lookahead with VGG Encoder (Todo).
+*  Streaming_transformer-lookahead with VGG Encoder.
 
 ## Results on Librispeech
 | Model        | test-clean   |  test-other  |latency  |size  |
 | --------   | -----:  | :----:  |:----:  |:----:  |
-| streaming_transformer-chunk32-conv2d     | 2.8   |   7.6    | 640ms  | ??M |
-| streaming_transformer-chunk32-vgg	| 2.9 | 7.0 | 640ms | ??M |
+| streaming_transformer-chunk32-conv2d     | 2.8   |   7.6    | 640ms  | 78M |
+| streaming_transformer-chunk32-vgg	| 2.9 | 7.0 | 640ms | 78M |
+
+
 
 
 ## Installation
