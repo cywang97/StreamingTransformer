@@ -21,6 +21,7 @@ from espnet.nets.pytorch_backend.transformer.positionwise_feed_forward import (
     PositionwiseFeedForward,  # noqa: H301
 )
 from espnet.nets.pytorch_backend.transformer.repeat import repeat
+from espnet.nets.pytorch_backend.transformer.subsampling import DecoderConv1d
 from espnet.nets.scorer_interface import BatchScorerInterface
 
 
@@ -76,6 +77,8 @@ class Decoder(BatchScorerInterface, torch.nn.Module):
                 torch.nn.ReLU(),
                 pos_enc_class(attention_dim, positional_dropout_rate),
             )
+        elif input_layer == 'conv':
+            self.embed = DecoderConv1d(odim, attention_dim)
         elif isinstance(input_layer, torch.nn.Module):
             self.embed = torch.nn.Sequential(
                 input_layer, pos_enc_class(attention_dim, positional_dropout_rate)
@@ -128,7 +131,11 @@ class Decoder(BatchScorerInterface, torch.nn.Module):
         :return tgt_mask: score mask before softmax (batch, maxlen_out)
         :rtype: torch.Tensor
         """
-        x = self.embed(tgt)
+        if isinstance(self.embed, DecoderConv1d):
+            ys_mask = tgt != 1
+            x = self.embed(tgt, ys_mask)
+        else:
+            x = self.embed(tgt)
         x, tgt_mask, memory, memory_mask = self.decoders(
             x, tgt_mask, memory, memory_mask
         )

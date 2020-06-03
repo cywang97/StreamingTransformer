@@ -50,6 +50,8 @@ class E2E(torch.nn.Module):
         group.add_argument("--transformer-input-layer", type=str, default="conv2d",
                            choices=["conv2d", "linear", "embed", "custom"],
                            help='transformer input layer type')
+        group.add_argument("--transformer-output-layer", type=str, default="embed",
+                           choices=["embed", "linear", "conv"])
         group.add_argument('--transformer-attn-dropout-rate', default=None, type=float,
                            help='dropout in transformer attention. use --dropout-rate if None is set')
         group.add_argument('--transformer-lr', default=10.0, type=float,
@@ -107,6 +109,7 @@ class E2E(torch.nn.Module):
             attention_heads=args.aheads,
             linear_units=args.dunits,
             num_blocks=args.dlayers,
+            input_layer=args.transformer_output_layer,
             dropout_rate=args.dropout_rate,
             positional_dropout_rate=args.dropout_rate,
             self_attention_dropout_rate=args.transformer_attn_dropout_rate,
