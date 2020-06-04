@@ -1,4 +1,6 @@
 #!/bin/bash
+. ./path.sh || exit 1
+. ./cmd.sh || exit 1
 dataset='test_clean test_other'
 config=conf/decode.yaml
 ngpu=$1
@@ -21,6 +23,7 @@ cgpu=$[$2+0]
 recog_set=$3
 echo $cgpu
 export CUDA_VISIBLE_DEVICES=$cgpu
+mkdir -p ${model_dir}/decode/${recog_set}/log
 ${decode_cmd} ${model_dir}/decode/${recog_set}/log/decode.${part}.log \
     asr_recog.py \
     --config ${config} \
