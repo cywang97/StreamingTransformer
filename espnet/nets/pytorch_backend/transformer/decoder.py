@@ -159,7 +159,11 @@ class Decoder(BatchScorerInterface, torch.nn.Module):
             `y.shape` is (batch, maxlen_out, token)
         :rtype: Tuple[torch.Tensor, List[torch.Tensor]]
         """
-        x = self.embed(tgt)
+        if isinstance(self.embed, DecoderConv1d):
+            ys_mask = tgt != -1
+            x = self.embed(tgt, ys_mask)
+        else:
+            x = self.embed(tgt)
         if cache is None:
             cache = [None] * len(self.decoders)
         new_cache = []
