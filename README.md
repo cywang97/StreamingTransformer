@@ -17,6 +17,7 @@ We will release following models and show reproducible results on Librispeech
 | streaming_transformer-chunk32-conv2d     | 2.8   |   7.6    | 640ms  | 78M |
 | streaming_transformer-chunk32-vgg	| 3.0 | 7.4| 640ms | 78M |
 | streaming_transformer-lookahead2-conv2d | 3.1  | 9.1 | 1230ms | 78M |
+| streaming_transformer-lookahead2-vgg | 2.9 | 8.0 | 1230ms | 78M  |
 
 
 
