@@ -3,21 +3,21 @@
 
 We will release following models and show reproducible results on Librispeech
 
-*  Streaming_transformer-chunk32 with ESPnet Conv2d Encoder.(https://drive.google.com/open?id=1toOCrXrUn-njRboBzq-8WPX7RjIfc0eb)
+*  Streaming_transformer-chunk32 with ESPnet Conv2d Encoder. (https://drive.google.com/file/d/1LSBY_vK50Jxvw_GeiYrPwRtJ0DsKU6zL/view?usp=sharing)
 
-*  Streaming_transformer-chunk32 with VGG Encoder.
+*  Streaming_transformer-chunk32 with VGG Encoder. (https://drive.google.com/file/d/12P6TsxtOCxrHezqgtk0USjSKBsYHIe7K/view?usp=sharing)
 
-*  Streaming_transformer-lookahead with ESPnet Conv2d Encoder. (https://drive.google.com/open?id=1oOWQo1sK0Xc49zXVlnq5fIdaDoxY7l_r)
+*  Streaming_transformer-lookahead with ESPnet Conv2d Encoder. (https://drive.google.com/file/d/1YJQaofzsk9_KsL2W9Zb42sGLRRIKRs9X/view?usp=sharing)
 
-*  Streaming_transformer-lookahead with VGG Encoder.
+*  Streaming_transformer-lookahead with VGG Encoder. (https://drive.google.com/file/d/1LO_0pPxU5XJffqJMgtx4W4IL-Aih5m0M/view?usp=sharing)
 
-## Results on Librispeech
+## Results on Librispeech (beam=10)
 | Model        | test-clean   |  test-other  |latency  |size  |
 | --------   | -----:  | :----:  |:----:  |:----:  |
-| streaming_transformer-chunk32-conv2d     | 2.8   |   7.6    | 640ms  | 78M |
-| streaming_transformer-chunk32-vgg	| 3.0 | 7.4| 640ms | 78M |
-| streaming_transformer-lookahead2-conv2d | 3.1  | 9.1 | 1230ms | 78M |
-| streaming_transformer-lookahead2-vgg | 2.9 | 8.0 | 1230ms | 78M  |
+| streaming_transformer-chunk32-conv2d     | 2.8   |   7.5  | 640ms  | 78M |
+| streaming_transformer-chunk32-vgg	| 2.8 | 7.0| 640ms | 78M |
+| streaming_transformer-lookahead2-conv2d | 3.0 | 8.6| 1230ms | 78M |
+| streaming_transformer-lookahead2-vgg | 2.8 | 7.5 | 1230ms | 78M  |
 
 
 
