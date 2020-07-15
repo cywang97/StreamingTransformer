@@ -131,7 +131,7 @@ class StreamingConverter(object):
             dec_mask = pad_list([m for m in dec_mask], 1).to(self.device)
         else:
             enc_mask = turncated_mask(batch_size, seq_len, self.args.left_window, self.args.right_window)
-            dec_mask = trigger_mask(batch_size, seq_len, trigger, self.args.dec_left_window, self.args.dec_right_window)
+            dec_mask = trigger_mask(batch_size, seq_len, align, self.args.dec_left_window, self.args.dec_right_window)
         return xs_pad, ilens, ys_pad, enc_mask, dec_mask
 
 
