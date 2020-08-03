@@ -6,4 +6,4 @@ minlenratio: 0.0
 ctc-weight: 0.5
 threshold: 0.0005
 ctc-lm-weight: 0.5
-prefix: true
+prefix-decode: true
