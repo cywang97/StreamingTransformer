@@ -13,6 +13,7 @@ import numpy as np
 
 import torch
 
+from espnet.nets.viterbi_align import viterbi_align
 from espnet.nets.pytorch_backend.ctc import CTC
 from espnet.nets.pytorch_backend.nets_utils import make_non_pad_mask
 from espnet.nets.pytorch_backend.nets_utils import th_accuracy
