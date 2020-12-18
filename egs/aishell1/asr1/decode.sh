@@ -29,7 +29,7 @@ ${decode_cmd} ${model_dir}/decode/${recog_set}/log/decode.${part}.log \
     --config ${config} \
     --ngpu 1 \
     --rnnlm ${rnnlm} \
-    --recog-json dump/${recog_set}/deltafalse/split${nblock}utt/data_unigram5000.${part}.json \
+    --recog-json dump/${recog_set}/deltafalse/split${nblock}utt/data.${part}.json \
     --model ${model_dir}/results/model.last5.avg.best \
     --result-label ${model_dir}/decode/${recog_set}/data.${part}.json
 }
