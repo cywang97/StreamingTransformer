@@ -661,7 +661,7 @@ class E2E(torch.nn.Module):
 
                         if l_plus not in hyps:
                             Pb[l_plus] += lpz[i][0] * (Pb_prev[l_plus] + Pnb_prev[l_plus])
-                            Pb[l_plus] += lpz[i][c] * Pnb_prev[l_plus]
+                            Pnb[l_plus] += lpz[i][c] * Pnb_prev[l_plus]
             #total_copy += time.time() - start
             for l in hyps_ctc.keys():
                 if Pb[l] != 0 or Pnb[l] != 0:
